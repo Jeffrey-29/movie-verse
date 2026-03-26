@@ -1,0 +1,252 @@
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>movie search</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>movie search</h1>
+
+<form action="/search" method="get">
+<input type="text" name="movie" placeholder="search movie" required>
+<button type="submit">search</button>
+</form>
+
+
+<!-- Not Found -->
+<% if (typeof notFound !== "undefined" && notFound) { %>
+<div class="not-found">
+No movies found 😕
+</div>
+<% } %>
+
+
+<!-- SEARCH RESULTS -->
+<% if (movies) { %>
+
+<h2>Search Results</h2>
+
+<div class="movie-grid">
+
+<% movies.forEach(movie => { %>
+
+<a href="/movie/<%= movie.id %>" class="movie-link">
+
+<div class="movie-card-small">
+
+<div class="poster-wrapper">
+
+<img 
+src="<%= movie.isOMDB 
+? movie.poster_path 
+: (movie.poster_path 
+? 'https://image.tmdb.org/t/p/w500' + movie.poster_path 
+: 'https://via.placeholder.com/300x450?text=No+Image') %>"
+>
+
+<div class="movie-hover">
+
+<% if(movie.vote_average) { %>
+<p class="rating">⭐ <%= movie.vote_average.toFixed(1) %></p>
+<% } %>
+
+<% if(movie.release_date) { %>
+<p>📅 <%= movie.release_date %></p>
+<% } %>
+
+<% if(movie.overview) { %>
+<p>
+<%= movie.overview.substring(0,60) %>...
+</p>
+<% } %>
+
+</div>
+
+</div>
+
+<h3><%= movie.title %></h3>
+
+<p><%= movie.release_date %></p>
+
+</div>
+
+</a>
+
+<% }) %>
+
+</div>
+
+<% } %>
+
+
+
+<!-- TRENDING -->
+<% if (trending) { %>
+
+<h2>Trending Movies</h2>
+
+<div class="movie-row">
+
+<% trending.forEach(movie => { %>
+
+<a href="/movie/<%= movie.id %>" class="movie-link">
+
+<div class="movie-card-small">
+
+<div class="poster-wrapper">
+
+<img src="https://image.tmdb.org/t/p/w500<%= movie.poster_path %>">
+
+<div class="movie-hover">
+
+<p class="rating">⭐ <%= movie.vote_average?.toFixed(1) %></p>
+
+<p>📅 <%= movie.release_date %></p>
+
+<p>
+<%= movie.overview?.substring(0,60) %>...
+</p>
+
+</div>
+
+</div>
+
+<h3><%= movie.title %></h3>
+
+<p><%= movie.release_date %></p>
+
+</div>
+
+</a>
+
+<% }) %>
+
+</div>
+
+<% } %>
+
+
+
+<!-- LATEST -->
+<% if (latest) { %>
+
+<h2>Latest Movies</h2>
+
+<div class="movie-row">
+
+<% latest.forEach(movie => { %>
+
+<a href="/movie/<%= movie.id %>" class="movie-link">
+
+<div class="movie-card-small">
+
+<div class="poster-wrapper">
+
+<img src="https://image.tmdb.org/t/p/w500<%= movie.poster_path %>">
+
+<div class="movie-hover">
+
+<p class="rating">⭐ <%= movie.vote_average?.toFixed(1) %></p>
+
+<p>📅 <%= movie.release_date %></p>
+
+<p>
+<%= movie.overview?.substring(0,60) %>...
+</p>
+
+</div>
+
+</div>
+
+<h3><%= movie.title %></h3>
+
+<p><%= movie.release_date %></p>
+
+</div>
+
+</a>
+
+<% }) %>
+
+</div>
+
+<% } %>
+
+
+
+<!-- TOP RATED -->
+<% if (topRated) { %>
+
+<h2>Top Rated Movies</h2>
+
+<div class="movie-row">
+
+<% topRated.forEach(movie => { %>
+
+<a href="/movie/<%= movie.id %>" class="movie-link">
+
+<div class="movie-card-small">
+
+<div class="poster-wrapper">
+
+<img src="https://image.tmdb.org/t/p/w500<%= movie.poster_path %>">
+
+<div class="movie-hover">
+
+<p class="rating">⭐ <%= movie.vote_average?.toFixed(1) %></p>
+
+<p>📅 <%= movie.release_date %></p>
+
+<p>
+<%= movie.overview?.substring(0,60) %>...
+</p>
+
+</div>
+
+</div>
+
+<h3><%= movie.title %></h3>
+
+<p><%= movie.release_date %></p>
+
+</div>
+
+</a>
+
+<% }) %>
+
+</div>
+
+<% } %>
+
+
+
+<!-- GENRES -->
+<% if (genres) { %>
+
+<h2>Browse by Genre</h2>
+
+<div class="genre-list">
+
+<% genres.forEach(genre => { %>
+
+<a href="/genre/<%= genre.id %>" class="genre-btn">
+<%= genre.name %>
+</a>
+
+<% }) %>
+
+</div>
+
+<% } %>
+
+
+</div>
+
+</body>
+</html>
