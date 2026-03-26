@@ -1,9 +1,12 @@
 import express from "express";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
 const port = 3000;
 
-const TMDB_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIyYmEyNzA4NjQ3Y2M2YzdmM2Q1ZDQ1OGNhM2IxZGQ2NCIsIm5iZiI6MTc3NDQ1NDY0Mi4xMTUsInN1YiI6IjY5YzQwNzcyMjFjM2M1NjFmMjYyZWQxYiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.R5_llob_WQjkgVIVEG6owWxGH5tMdjQwczM_NRD84JY";
+const TMDB_TOKEN = process.env.TMDB_TOKEN;
 app.use(express.static("public"));
 
 /* ================= HOME PAGE ================= */
@@ -118,7 +121,7 @@ movies = movies.sort((a, b) => b.popularity - a.popularity);
 if (movies.length === 0) {
 
 const omdb = await fetch(
-`https://www.omdbapi.com/?apikey=efe1f70a&s=${movie}`
+`https://www.omdbapi.com/?apikey=${process.env.OMDB_API_KEY}&s=${movie}`
 );
 
 const omdbData = await omdb.json();
