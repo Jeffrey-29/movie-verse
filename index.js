@@ -7,7 +7,16 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 const TMDB_TOKEN = process.env.TMDB_TOKEN;
+
+app.set("view engine", "ejs");
 app.use(express.static("public"));
+
+/* ================= CACHE ================= */
+
+let cachedTrending = [];
+let cachedLatest = [];
+let cachedTopRated = [];
+let cachedGenres = [];
 
 /* ================= HOME PAGE ================= */
 
@@ -20,43 +29,114 @@ Authorization: `Bearer ${TMDB_TOKEN}`,
 accept: "application/json"
 };
 
-// Fetch one by one (more stable)
+let trending = [];
+let latest = [];
+let topRated = [];
+let genres = [];
 
-const trendingRes = await fetch(
+
+/* ---------- Trending ---------- */
+
+try {
+
+const resTrending = await fetch(
 `https://api.themoviedb.org/3/trending/movie/week`,
 { headers }
 );
 
-const latestRes = await fetch(
+if (!resTrending.ok) throw new Error("Trending failed");
+
+const data = await resTrending.json();
+
+trending = data.results || [];
+cachedTrending = trending;
+
+} catch (error) {
+
+console.log("Trending Error:", error.message);
+trending = cachedTrending;
+
+}
+
+
+/* ---------- Latest ---------- */
+
+try {
+
+const resLatest = await fetch(
 `https://api.themoviedb.org/3/movie/now_playing`,
 { headers }
 );
 
-const topRatedRes = await fetch(
+if (!resLatest.ok) throw new Error("Latest failed");
+
+const data = await resLatest.json();
+
+latest = data.results || [];
+cachedLatest = latest;
+
+} catch (error) {
+
+console.log("Latest Error:", error.message);
+latest = cachedLatest;
+
+}
+
+
+/* ---------- Top Rated ---------- */
+
+try {
+
+const resTop = await fetch(
 `https://api.themoviedb.org/3/movie/top_rated`,
 { headers }
 );
 
-const genreRes = await fetch(
+if (!resTop.ok) throw new Error("Top rated failed");
+
+const data = await resTop.json();
+
+topRated = data.results || [];
+cachedTopRated = topRated;
+
+} catch (error) {
+
+console.log("Top Rated Error:", error.message);
+topRated = cachedTopRated;
+
+}
+
+
+/* ---------- Genres ---------- */
+
+try {
+
+const resGenre = await fetch(
 `https://api.themoviedb.org/3/genre/movie/list`,
 { headers }
 );
 
-const trendingData = await trendingRes.json();
-const latestData = await latestRes.json();
-const topRatedData = await topRatedRes.json();
-const genreData = await genreRes.json();
+if (!resGenre.ok) throw new Error("Genre failed");
 
-console.log("Trending:", trendingData.results?.length);
-console.log("Latest:", latestData.results?.length);
-console.log("TopRated:", topRatedData.results?.length);
+const data = await resGenre.json();
+
+genres = data.genres || [];
+cachedGenres = genres;
+
+} catch (error) {
+
+console.log("Genre Error:", error.message);
+genres = cachedGenres;
+
+}
+
 
 res.render("index.ejs", {
 movies: null,
-trending: trendingData.results || [],
-latest: latestData.results || [],
-topRated: topRatedData.results || [],
-genres: genreData.genres || [],
+trending,
+latest,
+topRated,
+genres,
 searchQuery: null,
 notFound: false
 });
@@ -78,6 +158,7 @@ notFound:false
 }
 
 });
+
 
 
 /* ================= SEARCH ================= */
@@ -102,21 +183,26 @@ fetch(`https://api.themoviedb.org/3/search/multi?query=${encodeURIComponent(movi
 
 let movies = [];
 
-for (const res of responses) {
-if (res.status === "fulfilled") {
-const data = await res.value.json();
+for (const resItem of responses) {
+
+if (resItem.status === "fulfilled") {
+
+const data = await resItem.value.json();
 
 movies.push(
-...(data.results || []).filter(item =>
-item.media_type === "movie"
+...(data.results || []).filter(
+item => item.media_type === "movie"
 )
 );
+
 }
+
 }
 
 movies = movies.sort((a, b) => b.popularity - a.popularity);
 
-/* OMDB fallback */
+
+/* ---------- OMDB fallback ---------- */
 
 if (movies.length === 0) {
 
@@ -133,6 +219,7 @@ release_date: m.Year,
 poster_path: m.Poster !== "N/A" ? m.Poster : null,
 isOMDB: true
 }));
+
 }
 
 res.render("index.ejs", {
@@ -164,33 +251,171 @@ notFound: true
 });
 
 
+
+/* ================= SEARCH SUGGEST ================= */
+
+app.get("/suggest", async (req,res)=>{
+
+try {
+
+const query = req.query.q;
+
+if(!query || query.length < 2){
+return res.json([]);
+}
+
+const headers = {
+Authorization: `Bearer ${TMDB_TOKEN}`,
+accept: "application/json"
+};
+
+const response = await fetch(
+`https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(query)}`,
+{headers}
+);
+
+const data = await response.json();
+
+res.json(data.results.slice(0,5));
+
+} catch{
+res.json([]);
+}
+
+});
+
+
+
 /* ================= MOVIE DETAILS ================= */
 
 app.get("/movie/:id", async (req, res) => {
 
 try {
 
-const id = req.params.id;
+const movieId = req.params.id;
 
-const response = await fetch(
-`https://api.themoviedb.org/3/movie/${id}`,
-{
-headers: {
+const headers = {
 Authorization: `Bearer ${TMDB_TOKEN}`,
 accept: "application/json"
-}
-}
+};
+
+
+/* ---------- Movie ---------- */
+
+const movieRes = await fetch(
+`https://api.themoviedb.org/3/movie/${movieId}`,
+{ headers }
 );
 
-const data = await response.json();
+const movie = await movieRes.json();
 
-res.render("movie.ejs", {
-movie: data
+
+/* ---------- Providers ---------- */
+
+const providerRes = await fetch(
+`https://api.themoviedb.org/3/movie/${movieId}/watch/providers`,
+{ headers }
+);
+
+const providerData = await providerRes.json();
+
+const providers = providerData.results?.IN || providerData.results?.US || null;
+
+
+/* ---------- Trailer ---------- */
+
+const videoRes = await fetch(
+`https://api.themoviedb.org/3/movie/${movieId}/videos`,
+{ headers }
+);
+
+const videoData = await videoRes.json();
+
+const trailer = videoData.results?.find(
+v => v.type === "Trailer" && v.site === "YouTube"
+);
+
+
+/* ---------- Cast ---------- */
+
+const castRes = await fetch(
+`https://api.themoviedb.org/3/movie/${movieId}/credits`,
+{ headers }
+);
+
+const castData = await castRes.json();
+
+const cast = castData.cast?.slice(0,10);
+
+
+/* ---------- Similar ---------- */
+
+const similarRes = await fetch(
+`https://api.themoviedb.org/3/movie/${movieId}/similar`,
+{ headers }
+);
+
+const similarData = await similarRes.json();
+
+const similar = similarData.results?.slice(0,12);
+
+
+res.render("movie", {
+movie,
+providers,
+trailer,
+cast,
+similar
 });
 
-} catch (error) {
+} catch {
 
-console.log(error.message);
+console.log("Movie Fetch Failed");
+
+res.redirect("/");
+
+}
+
+});
+
+
+/* ================= ACTOR PAGE ================= */
+
+app.get("/actor/:id", async (req,res)=>{
+
+try {
+
+const id = req.params.id;
+
+const headers = {
+Authorization: `Bearer ${TMDB_TOKEN}`,
+accept: "application/json"
+};
+
+const actorRes = await fetch(
+`https://api.themoviedb.org/3/person/${id}`,
+{headers}
+);
+
+const actor = await actorRes.json();
+
+
+const movieRes = await fetch(
+`https://api.themoviedb.org/3/person/${id}/movie_credits`,
+{headers}
+);
+
+const movieData = await movieRes.json();
+
+const movies = movieData.cast.slice(0,12);
+
+res.render("actor",{
+actor,
+movies
+});
+
+} catch {
+
 res.redirect("/");
 
 }
@@ -201,6 +426,8 @@ res.redirect("/");
 /* ================= GENRE ================= */
 
 app.get("/genre/:id", async (req,res)=>{
+
+try {
 
 const headers = {
 Authorization: `Bearer ${TMDB_TOKEN}`,
@@ -226,51 +453,12 @@ searchQuery:null,
 notFound:false
 });
 
-});
+} catch{
 
+console.log("Genre Error");
+res.redirect("/");
 
-/* ================= LOAD MORE ================= */
-
-app.get("/load-more", async (req,res)=>{
-
-const page = req.query.page;
-
-const headers = {
-Authorization: `Bearer ${TMDB_TOKEN}`,
-accept: "application/json"
-};
-
-const response = await fetch(
-`https://api.themoviedb.org/3/movie/popular?page=${page}`,
-{headers}
-);
-
-const data = await response.json();
-
-res.json(data.results);
-
-});
-
-
-/* ================= SEARCH SUGGEST ================= */
-
-app.get("/suggest", async (req,res)=>{
-
-const query = req.query.q;
-
-const headers = {
-Authorization: `Bearer ${TMDB_TOKEN}`,
-accept: "application/json"
-};
-
-const response = await fetch(
-`https://api.themoviedb.org/3/search/movie?query=${query}`,
-{headers}
-);
-
-const data = await response.json();
-
-res.json(data.results.slice(0,5));
+}
 
 });
 

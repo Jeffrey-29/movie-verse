@@ -2,35 +2,311 @@
 <html>
 
 <head>
-<title><%= movie.Title %></title>
+<title><%= movie.title %></title>
 <link rel="stylesheet" href="/styles.css">
 </head>
 
 <body>
 
-<div class="container">
+<%
+const stream = providers?.flatrate || [];
+const rent = providers?.rent || [];
+const buy = providers?.buy || [];
+
+const justWatchLink = `https://www.justwatch.com/in/search?q=${encodeURIComponent(movie.title)}`;
+
+const backdrop = movie.backdrop_path 
+? "https://image.tmdb.org/t/p/original" + movie.backdrop_path
+: "https://via.placeholder.com/1920x800?text=Movieverse";
+%>
+
+
+
+<!-- ================= HERO ================= -->
+
+<div class="hero"
+style="background-image:url('<%= backdrop %>')">
+
+<div class="hero-overlay">
+
+<div class="hero-content">
+
+<div class="poster">
+
+<img 
+src="<%= movie.poster_path 
+? 'https://image.tmdb.org/t/p/w500' + movie.poster_path 
+: 'https://via.placeholder.com/300x450' %>"
+>
+
+<% if(stream.length > 0) { %>
+
+<a 
+href="<%= justWatchLink %>"
+target="_blank"
+class="stream-badge">
+
+<img src="https://image.tmdb.org/t/p/w200<%= stream[0].logo_path %>">
+
+<span>Now Streaming</span>
+
+</a>
+
+<% } %>
+
+</div>
+
+
+
+<div class="hero-info">
 
 <h1><%= movie.title %></h1>
 
-<div class="movie-card">
+<div class="meta">
 
-<img src="https://image.tmdb.org/t/p/w500<%= movie.poster_path %>">
-<div class="movie-info">
+<span>⭐ <%= movie.vote_average?.toFixed(1) %></span>
 
-<p>⭐ Rating: <%= movie.imdbRating %></p>
+<span>📅 <%= movie.release_date %></span>
 
-<p>📅 Released: <%= movie.Released %></p>
+<span>🎬 <%= movie.runtime %> min</span>
 
-<p>🎬 Genre: <%= movie.Genre %></p>
+</div>
 
-<p>🎭 Actors: <%= movie.Actors %></p>
-
-<p><%= movie.overview %></p>
+<p class="overview">
+<%= movie.overview %>
+</p>
 
 </div>
 
 </div>
-<button onclick="history.back()" class="back-btn">⬅ Back</button>
+
+</div>
+
+</div>
+
+
+
+<!-- ================= WATCH + TRAILER ================= -->
+
+<div class="watch-trailer-container">
+
+<!-- LEFT SIDE WATCH -->
+
+<div class="watch-left">
+
+<h2>Where to Watch</h2>
+
+<!-- STREAM -->
+<% if(stream.length > 0){ %>
+
+<h3>Stream</h3>
+
+<div class="watch-row">
+
+<% stream.forEach(service => { %>
+
+<a href="<%= justWatchLink %>" target="_blank" class="watch-logo">
+
+<img
+src="https://image.tmdb.org/t/p/w200<%= service.logo_path %>"
+title="<%= service.provider_name %>">
+
+</a>
+
+<% }) %>
+
+</div>
+
+<% } %>
+
+
+
+<!-- RENT -->
+<% if(rent.length > 0){ %>
+
+<h3>Rent</h3>
+
+<div class="watch-row">
+
+<% rent.forEach(service => { %>
+
+<a href="<%= justWatchLink %>" target="_blank" class="watch-logo">
+
+<img
+src="https://image.tmdb.org/t/p/w200<%= service.logo_path %>"
+title="<%= service.provider_name %>">
+
+</a>
+
+<% }) %>
+
+</div>
+
+<% } %>
+
+
+
+<!-- BUY -->
+<% if(buy.length > 0){ %>
+
+<h3>Buy</h3>
+
+<div class="watch-row">
+
+<% buy.forEach(service => { %>
+
+<a href="<%= justWatchLink %>" target="_blank" class="watch-logo">
+
+<img
+src="https://image.tmdb.org/t/p/w200<%= service.logo_path %>"
+title="<%= service.provider_name %>">
+
+</a>
+
+<% }) %>
+
+</div>
+
+<% } %>
+
+
+<% if(stream.length === 0 && rent.length === 0 && buy.length === 0){ %>
+
+<p class="no-streaming">
+Not available in your region
+</p>
+
+<% } %>
+
+</div>
+
+
+
+<!-- RIGHT SIDE TRAILER -->
+
+<div class="trailer-right">
+
+<% if(trailer){ %>
+
+<h2>Trailer</h2>
+
+<div class="trailer-card">
+
+<iframe
+src="https://www.youtube.com/embed/<%= trailer.key %>"
+frameborder="0"
+allowfullscreen>
+</iframe>
+
+</div>
+
+<% } else { %>
+
+<h2>Trailer</h2>
+
+<div class="trailer-card">
+
+<div class="no-trailer">
+Trailer not available
+</div>
+
+</div>
+
+<% } %>
+
+</div>
+
+</div>
+
+
+
+<!-- ================= CAST ================= -->
+
+<!-- ================= CAST ================= -->
+
+<% if(cast && cast.length > 0){ %>
+
+<div class="cast-section">
+
+<h2>Cast</h2>
+
+<div class="cast-row">
+
+<% cast.forEach(actor => { %>
+
+<a href="/actor/<%= actor.id %>" class="cast-link">
+
+<div class="cast-card">
+
+<img
+src="<%= actor.profile_path 
+? 'https://image.tmdb.org/t/p/w200' + actor.profile_path 
+: 'https://via.placeholder.com/200x300' %>">
+
+<div class="cast-info">
+
+<p><%= actor.name %></p>
+
+<span><%= actor.character %></span>
+
+</div>
+
+</div>
+
+</a>
+
+<% }) %>
+
+</div>
+
+</div>
+
+<% } %>
+
+
+
+<!-- ================= SIMILAR ================= -->
+
+<% if(similar && similar.length > 0){ %>
+
+<div class="similar-section">
+
+<h2>More Like This</h2>
+
+<div class="movie-row">
+
+<% similar.forEach(movie => { %>
+
+<a href="/movie/<%= movie.id %>" class="movie-link">
+
+<div class="similar-card">
+
+<img 
+src="<%= movie.poster_path 
+? 'https://image.tmdb.org/t/p/w500' + movie.poster_path 
+: 'https://via.placeholder.com/300x450' %>">
+
+<h3><%= movie.title %></h3>
+
+</div>
+
+</a>
+
+<% }) %>
+
+</div>
+
+</div>
+
+<% } %>
+
+
+
+<div class="container">
+
+<button onclick="history.back()" class="back-btn">
+⬅ Back
+</button>
 
 </div>
 

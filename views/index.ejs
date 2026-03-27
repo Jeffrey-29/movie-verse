@@ -1,11 +1,20 @@
+<!DOCTYPE html>
 <html lang="en">
+
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Movieverse</title>
+
 <link rel="stylesheet" href="/styles.css">
+
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+
 </head>
+
 
 <body>
 
@@ -13,21 +22,45 @@
 
 <h1>Movieverse</h1>
 
+
+<!-- ================= SEARCH ================= -->
+
+<div class="search-wrapper">
+
 <form action="/search" method="get">
-<input type="text" name="movie" placeholder="search movie" required>
-<button type="submit">search</button>
+
+<input 
+type="text" 
+name="movie" 
+placeholder="Search movie..."
+autocomplete="off"
+required
+>
+
+<button type="submit">Search</button>
+
 </form>
 
+<div id="suggestions" class="suggestions"></div>
 
-<!-- Not Found -->
+</div>
+
+
+
+<!-- ================= NOT FOUND ================= -->
+
 <% if (typeof notFound !== "undefined" && notFound) { %>
+
 <div class="not-found">
 No movies found 😕
 </div>
+
 <% } %>
 
 
-<!-- SEARCH RESULTS -->
+
+<!-- ================= SEARCH RESULTS ================= -->
+
 <% if (movies) { %>
 
 <h2>Search Results</h2>
@@ -52,15 +85,17 @@ src="<%= movie.isOMDB
 
 <div class="movie-hover">
 
-<% if(movie.vote_average) { %>
-<p class="rating">⭐ <%= movie.vote_average.toFixed(1) %></p>
+<% if(movie.vote_average){ %>
+<p class="rating">
+⭐ <%= movie.vote_average.toFixed(1) %>
+</p>
 <% } %>
 
-<% if(movie.release_date) { %>
+<% if(movie.release_date){ %>
 <p>📅 <%= movie.release_date %></p>
 <% } %>
 
-<% if(movie.overview) { %>
+<% if(movie.overview){ %>
 <p>
 <%= movie.overview.substring(0,60) %>...
 </p>
@@ -72,7 +107,7 @@ src="<%= movie.isOMDB
 
 <h3><%= movie.title %></h3>
 
-<p><%= movie.release_date %></p>
+<p><%= movie.release_date || "" %></p>
 
 </div>
 
@@ -86,8 +121,9 @@ src="<%= movie.isOMDB
 
 
 
-<!-- TRENDING -->
-<% if (trending) { %>
+<!-- ================= TRENDING ================= -->
+
+<% if (trending && trending.length > 0) { %>
 
 <h2>Trending Movies</h2>
 
@@ -101,11 +137,17 @@ src="<%= movie.isOMDB
 
 <div class="poster-wrapper">
 
-<img src="https://image.tmdb.org/t/p/w500<%= movie.poster_path %>">
+<img 
+src="<%= movie.poster_path 
+? 'https://image.tmdb.org/t/p/w500' + movie.poster_path 
+: 'https://via.placeholder.com/300x450?text=No+Image' %>"
+>
 
 <div class="movie-hover">
 
-<p class="rating">⭐ <%= movie.vote_average?.toFixed(1) %></p>
+<p class="rating">
+⭐ <%= movie.vote_average?.toFixed(1) %>
+</p>
 
 <p>📅 <%= movie.release_date %></p>
 
@@ -133,8 +175,9 @@ src="<%= movie.isOMDB
 
 
 
-<!-- LATEST -->
-<% if (latest) { %>
+<!-- ================= LATEST ================= -->
+
+<% if (latest && latest.length > 0) { %>
 
 <h2>Latest Movies</h2>
 
@@ -148,11 +191,17 @@ src="<%= movie.isOMDB
 
 <div class="poster-wrapper">
 
-<img src="https://image.tmdb.org/t/p/w500<%= movie.poster_path %>">
+<img 
+src="<%= movie.poster_path 
+? 'https://image.tmdb.org/t/p/w500' + movie.poster_path 
+: 'https://via.placeholder.com/300x450?text=No+Image' %>"
+>
 
 <div class="movie-hover">
 
-<p class="rating">⭐ <%= movie.vote_average?.toFixed(1) %></p>
+<p class="rating">
+⭐ <%= movie.vote_average?.toFixed(1) %>
+</p>
 
 <p>📅 <%= movie.release_date %></p>
 
@@ -180,8 +229,9 @@ src="<%= movie.isOMDB
 
 
 
-<!-- TOP RATED -->
-<% if (topRated) { %>
+<!-- ================= TOP RATED ================= -->
+
+<% if (topRated && topRated.length > 0) { %>
 
 <h2>Top Rated Movies</h2>
 
@@ -195,11 +245,17 @@ src="<%= movie.isOMDB
 
 <div class="poster-wrapper">
 
-<img src="https://image.tmdb.org/t/p/w500<%= movie.poster_path %>">
+<img 
+src="<%= movie.poster_path 
+? 'https://image.tmdb.org/t/p/w500' + movie.poster_path 
+: 'https://via.placeholder.com/300x450?text=No+Image' %>"
+>
 
 <div class="movie-hover">
 
-<p class="rating">⭐ <%= movie.vote_average?.toFixed(1) %></p>
+<p class="rating">
+⭐ <%= movie.vote_average?.toFixed(1) %>
+</p>
 
 <p>📅 <%= movie.release_date %></p>
 
@@ -227,8 +283,9 @@ src="<%= movie.isOMDB
 
 
 
-<!-- GENRES -->
-<% if (genres) { %>
+<!-- ================= GENRES ================= -->
+
+<% if (genres && genres.length > 0) { %>
 
 <h2>Browse by Genre</h2>
 
@@ -246,8 +303,61 @@ src="<%= movie.isOMDB
 
 <% } %>
 
-
 </div>
+
+
+
+<!-- ================= SEARCH SUGGESTIONS SCRIPT ================= -->
+
+<script>
+
+const input = document.querySelector("input[name='movie']");
+const suggestions = document.getElementById("suggestions");
+
+input.addEventListener("input", async () => {
+
+const query = input.value;
+
+if(query.length < 2){
+suggestions.innerHTML = "";
+suggestions.style.display = "none";
+return;
+}
+
+const res = await fetch(`/suggest?q=${query}`);
+const data = await res.json();
+
+suggestions.innerHTML = data.map(movie => `
+<div class="suggest-item" onclick="selectMovie('${movie.title}')">
+${movie.title}
+</div>
+`).join("");
+
+suggestions.style.display = "block";
+
+});
+
+
+function selectMovie(title){
+input.value = title;
+suggestions.innerHTML = "";
+suggestions.style.display = "none";
+}
+
+
+/* CLOSE WHEN CLICK OUTSIDE */
+
+document.addEventListener("click", function(e){
+
+if(!e.target.closest(".search-wrapper")){
+suggestions.style.display = "none";
+}
+
+});
+
+
+</script>
+
 
 </body>
 </html>

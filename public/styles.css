@@ -21,19 +21,16 @@ font-size: 52px;
 font-weight: 400;
 margin-bottom: 20px;
 
-
 background: linear-gradient(90deg,#00f5ff,#00a8ff);
 -webkit-background-clip: text;
 -webkit-text-fill-color: transparent;
 }
 
-
 h2 {
-font-family: 'Poppins', sans-serif;
 font-weight: 600;
 letter-spacing: 0.5px;
+margin-bottom:15px;
 }
-
 
 /* ================= SEARCH ================= */
 
@@ -50,12 +47,9 @@ width: 380px;
 border-radius: 12px;
 border: none;
 outline: none;
-
 background: #1e293b;
 color: white;
 font-size: 15px;
-
-box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
 transition: 0.3s ease;
 }
 
@@ -67,37 +61,22 @@ form button {
 padding: 14px 22px;
 border-radius: 12px;
 border: none;
-
 background: linear-gradient(90deg,#6366f1,#8b5cf6);
 color: white;
-
 font-weight: 600;
 cursor: pointer;
-
 transition: 0.3s ease;
 }
 
 form button:hover {
 transform: translateY(-2px);
-box-shadow: 0 10px 20px rgba(99,102,241,0.3);
 }
 
-
-/* ================= MOVIE GRID ================= */
-
-.movie-grid {
-display: grid;
-grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-gap: 35px;
-margin-top: 30px;
-align-items: stretch;
+.search-wrapper{
+position:relative;
+display:flex;
+justify-content:center;
 }
-
-.movie-grid .movie-card-small {
-width: 100%;
-height: 100%;
-}
-
 
 /* ================= HORIZONTAL ROW ================= */
 
@@ -106,7 +85,6 @@ display: flex;
 gap: 20px;
 overflow-x: auto;
 padding-bottom: 10px;
-scroll-behavior: smooth;
 }
 
 .movie-row::-webkit-scrollbar {
@@ -118,199 +96,281 @@ background: #334155;
 border-radius: 10px;
 }
 
-.movie-row::-webkit-scrollbar-track {
-background: transparent;
-}
-
-.movie-row .movie-card-small {
-min-width: 180px;
-flex-shrink: 0;
-}
-
-
 /* ================= MOVIE CARD ================= */
 
 .movie-card-small {
-background: #1e293b;
-padding: 12px;
-border-radius: 12px;
-text-align: center;
-transition: 0.3s ease;
-cursor: pointer;
-
-display: flex;
-flex-direction: column;
-height: 100%;
+min-width:180px;
+background:#1e293b;
+padding:12px;
+border-radius:14px;
+transition:.3s;
+cursor:pointer;
 }
 
-.movie-card-small:hover {
-transform: translateY(-10px) scale(1.03);
-box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+.movie-card-small:hover{
+transform:translateY(-8px);
+box-shadow:0 20px 40px rgba(0,0,0,.4);
 }
 
-.movie-card-small img {
-width: 100%;
-aspect-ratio: 2/3;
-object-fit: cover;
-border-radius: 8px;
+.movie-card-small img{
+width:100%;
+aspect-ratio:2/3;
+object-fit:cover;
+border-radius:10px;
 }
 
+.movie-card-small h3{
+font-size:14px;
+margin-top:8px;
+}
+
+.movie-card-small p{
+font-size:12px;
+color:#94a3b8;
+}
 
 /* ================= POSTER WRAPPER ================= */
 
 .poster-wrapper {
 position: relative;
 overflow: hidden;
-border-radius: 8px;
-}
-
-
-/* ================= RATING BADGE ================= */
-
-.rating-badge {
-position: absolute;
-top: 8px;
-left: 8px;
-background: rgba(0,0,0,0.75);
-backdrop-filter: blur(5px);
-color: #ffd700;
-padding: 4px 8px;
-border-radius: 6px;
-font-size: 12px;
-font-weight: 600;
-}
-
-
-/* ================= HOVER OVERLAY ================= */
-
-.movie-hover {
-position: absolute;
-bottom: 0;
-left: 0;
-right: 0;
-
-background: linear-gradient(
-to top,
-rgba(0,0,0,0.95) 0%,
-rgba(0,0,0,0.7) 50%,
-transparent 100%
-);
-
-padding: 14px;
-opacity: 0;
-transition: 0.3s ease;
-
-display: flex;
-flex-direction: column;
-justify-content: flex-end;
-height: 100%;
-}
-
-.poster-wrapper:hover .movie-hover {
-opacity: 1;
-}
-
-.movie-hover p {
-font-size: 12px;
-margin: 4px 0;
-color: #e5e7eb;
-}
-
-.movie-hover .rating {
-color: #ffd700;
-font-weight: 600;
-}
-
-
-/* ================= TITLE ================= */
-
-.movie-card-small h3 {
-font-family: 'Poppins', sans-serif;
-font-weight: 600;
-font-size: 14px;
-
-display: -webkit-box;
--webkit-line-clamp: 2;
--webkit-box-orient: vertical;
-overflow: hidden;
-
-min-height: 36px;
-}
-
-.movie-card-small p {
-color: #9ca3af;
-font-size: 12px;
-margin-top: 5px;
-}
-
-
-/* ================= LINKS ================= */
-
-.movie-link {
-text-decoration: none;
-color: inherit;
-}
-
-.movie-link:hover {
-text-decoration: none;
-color: inherit;
-}
-
-.movie-link h3 {
-color: #fff;
-text-decoration: none;
-}
-
-
-/* ================= MOVIE DETAILS ================= */
-
-.movie-card {
-display: flex;
-gap: 30px;
-background: #1e293b;
-padding: 20px;
-border-radius: 15px;
-margin-top: 30px;
-}
-
-.movie-card img {
-width: 250px;
 border-radius: 10px;
 }
 
-.movie-info {
-text-align: left;
+/* ================= HOVER ================= */
+
+.movie-hover {
+position:absolute;
+bottom:0;
+left:0;
+right:0;
+
+background:linear-gradient(
+to top,
+rgba(0,0,0,.95),
+transparent
+);
+
+padding:12px;
+opacity:0;
+transition:.3s;
 }
 
-.back-btn {
-margin-top: 20px;
-padding: 10px 20px;
-border-radius: 8px;
-border: none;
-background: #6366f1;
-color: white;
-cursor: pointer;
+.poster-wrapper:hover .movie-hover{
+opacity:1;
 }
 
-
-/* ================= SUGGESTIONS ================= */
-
-.suggestion {
-margin-top: 15px;
-font-size: 18px;
-color: #a5b4fc;
+.movie-hover p{
+font-size:12px;
+margin:4px 0;
 }
 
-.suggestion strong {
-color: white;
+.movie-hover .rating{
+color:#ffd700;
+font-weight:600;
 }
 
-.not-found {
-margin-top: 20px;
-font-size: 18px;
-color: #ccc;
+/* ================= MOVIE GRID ================= */
+
+.movie-grid {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+gap: 35px;
+margin-top: 30px;
 }
 
+/* ================= HERO ================= */
+
+.hero{
+min-height:480px;
+background-size:cover;
+background-position:center;
+}
+
+.hero-overlay{
+background:linear-gradient(
+to right,
+rgba(0,0,0,.95),
+rgba(0,0,0,.2)
+);
+height:100%;
+display:flex;
+align-items:center;
+}
+
+.hero-content{
+display:flex;
+gap:40px;
+padding:50px;
+}
+
+.poster img{
+width:240px;
+border-radius:14px;
+}
+
+.hero-info{
+max-width:650px;
+}
+
+.hero-info h1{
+font-size:46px;
+}
+
+.meta{
+display:flex;
+gap:20px;
+margin-bottom:15px;
+color:#cbd5e1;
+}
+
+.overview{
+opacity:.9;
+}
+
+.stream-badge{
+display:flex;
+align-items:center;
+gap:8px;
+background:#6366f1;
+padding:8px 14px;
+border-radius:8px;
+margin-top:12px;
+text-decoration:none;
+color:white;
+}
+
+.stream-badge img{
+width:20px;
+}
+
+/* ================= WATCH + TRAILER ================= */
+
+/* ================= WATCH + TRAILER ================= */
+
+.watch-trailer-container{
+display:grid;
+grid-template-columns: 1fr 1.6fr;
+gap:30px;
+padding:40px 60px;
+align-items:start;
+}
+
+.watch-left{
+background:#020617;
+padding:25px;
+border-radius:16px;
+border:1px solid rgba(255,255,255,0.05);
+min-height:220px;
+}
+
+.trailer-right{
+background:#020617;
+padding:20px;
+border-radius:16px;
+border:1px solid rgba(255,255,255,0.05);
+}
+
+.trailer-card iframe{
+width:100%;
+height:320px;
+border-radius:14px;
+}
+
+/* Better Watch Logos */
+
+.watch-row{
+display:flex;
+gap:15px;
+flex-wrap:wrap;
+margin-top:15px;
+}
+
+.watch-logo{
+background:#020617;
+padding:12px;
+border-radius:12px;
+transition:.3s;
+border:1px solid rgba(255,255,255,0.05);
+}
+
+.watch-logo:hover{
+transform:translateY(-5px);
+}
+
+.watch-logo img{
+width:65px;
+height:65px;
+object-fit:contain;
+}
+
+/* ================= CAST ================= */
+
+.cast-section{
+margin:40px 60px;
+}
+
+.cast-row{
+display:flex;
+gap:20px;
+overflow-x:auto;
+padding:10px 0;
+}
+
+.cast-link{
+text-decoration:none;
+color:white;
+}
+
+.cast-card{
+min-width:150px;
+background:#1e293b;
+border-radius:14px;
+overflow:hidden;
+transition:.3s;
+cursor:pointer;
+}
+
+.cast-card:hover{
+transform:translateY(-8px);
+}
+
+.cast-card img{
+width:100%;
+height:220px;
+object-fit:cover;
+}
+
+.cast-info{
+padding:10px;
+text-align:center;
+}
+
+.cast-info p{
+font-weight:600;
+font-size:14px;
+}
+
+.cast-info span{
+font-size:12px;
+color:#94a3b8;
+}
+
+/* ================= SIMILAR ================= */
+
+.similar-section{
+margin:40px 60px;
+}
+
+.similar-card{
+min-width:180px;
+transition:.3s;
+}
+
+.similar-card img{
+width:100%;
+border-radius:14px;
+}
 
 /* ================= GENRES ================= */
 
@@ -327,13 +387,119 @@ padding: 12px;
 border-radius: 8px;
 text-decoration: none;
 color: white;
-font-size: 14px;
-text-align: center;
-transition: 0.3s;
-border: 1px solid rgba(255,255,255,0.05);
 }
 
 .genre-btn:hover {
 background: #6366f1;
-transform: translateY(-3px);
 }
+
+/* ================= BACK ================= */
+
+.back-btn {
+margin-top: 30px;
+padding: 10px 20px;
+border-radius: 8px;
+border: none;
+background: #6366f1;
+color: white;
+cursor: pointer;
+}
+
+.movie-link {
+text-decoration:none;
+color:inherit;
+}
+
+/* ================= RESPONSIVE ================= */
+
+@media(max-width:900px){
+
+.hero-content{
+flex-direction:column;
+text-align:center;
+}
+
+.watch-trailer-container{
+flex-direction:column;
+}
+
+}
+/* ================= suggestions ================= */
+
+
+/* ================= SEARCH SUGGESTIONS ================= */
+
+.suggestions{
+display:none;
+position:absolute;
+top:70px;
+width:380px;
+background:#020617;
+border-radius:12px;
+overflow:hidden;
+box-shadow:0 20px 40px rgba(0,0,0,.6);
+z-index:1000;
+text-align:left;
+}
+
+.suggest-item{
+padding:14px 18px;
+cursor:pointer;
+border-bottom:1px solid rgba(255,255,255,.05);
+transition:.2s;
+font-size:14px;
+}
+
+.suggest-item:hover{
+background:#1e293b;
+}
+
+.suggest-item:last-child{
+border-bottom:none;
+}
+
+
+/* ================= ACTOR PAGE ================= */
+
+.actor-hero{
+padding:50px;
+}
+
+.actor-container{
+display:flex;
+gap:40px;
+align-items:flex-start;
+}
+
+.actor-image{
+width:260px;
+border-radius:14px;
+}
+
+.actor-info{
+max-width:700px;
+}
+
+.actor-bio{
+margin-top:15px;
+line-height:1.6;
+opacity:.9;
+}
+
+.actor-meta{
+margin-top:8px;
+color:#94a3b8;
+}
+
+
+@media(max-width:900px){
+
+.actor-container{
+flex-direction:column;
+align-items:center;
+text-align:center;
+}
+
+}
+
+

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title><%= actor.name %></title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+
+<body>
+
+<div class="actor-hero">
+
+<div class="actor-container">
+
+<img 
+class="actor-image"
+src="<%= actor.profile_path 
+? 'https://image.tmdb.org/t/p/w300' + actor.profile_path 
+: 'https://via.placeholder.com/300x450' %>"
+>
+
+<div class="actor-info">
+
+<h1><%= actor.name %></h1>
+
+<p class="actor-bio">
+<%= actor.biography || "No biography available." %>
+</p>
+
+<p class="actor-meta">
+🎂 Born: <%= actor.birthday || "Unknown" %>
+</p>
+
+<p class="actor-meta">
+📍 Place: <%= actor.place_of_birth || "Unknown" %>
+</p>
+
+</div>
+
+</div>
+
+</div>
+
+
+
+<!-- MOVIES -->
+
+<div class="similar-section">
+
+<h2>Known For</h2>
+
+<div class="movie-row">
+
+<% movies.forEach(movie => { %>
+
+<a href="/movie/<%= movie.id %>" class="movie-link">
+
+<div class="similar-card">
+
+<img 
+src="<%= movie.poster_path 
+? 'https://image.tmdb.org/t/p/w500' + movie.poster_path 
+: 'https://via.placeholder.com/300x450' %>"
+>
+
+<h3><%= movie.title %></h3>
+
+</div>
+
+</a>
+
+<% }) %>
+
+</div>
+
+</div>
+
+
+
+<div class="container">
+
+<button onclick="history.back()" class="back-btn">
+⬅ Back
+</button>
+
+</div>
+
+</body>
+
+</html>
