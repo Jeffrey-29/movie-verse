@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>My Wishlist</title>
+
+<link rel="stylesheet" href="/styles.css">
+
+</head>
+
+<body>
+
+<%- include("partials/header") %>
+
+<div class="container">
+
+<h2>My Wishlist</h2>
+
+<div id="wishlistRow" class="movie-grid"></div>
+
+<div id="emptyWishlist" style="display:none">
+<p>Your wishlist is empty 💔</p>
+</div>
+
+</div>
+
+
+
+<script>
+
+function getWishlist(){
+return JSON.parse(localStorage.getItem("wishlist")) || [];
+}
+
+function saveWishlist(list){
+localStorage.setItem("wishlist", JSON.stringify(list));
+}
+
+
+const wishlist = getWishlist();
+
+const row = document.getElementById("wishlistRow");
+const empty = document.getElementById("emptyWishlist");
+
+if(wishlist.length === 0){
+empty.style.display = "block";
+}
+
+
+wishlist.forEach(movie => {
+
+row.innerHTML += `
+<a href="/movie/${movie.id}" class="movie-link">
+
+<div class="movie-card-small">
+
+<div class="poster-wrapper">
+
+<button 
+class="wishlist-btn active"
+data-id="${movie.id}"
+onclick="toggleWishlist(event,'${movie.id}','${movie.title}','${movie.poster}')"
+>
+❤
+</button>
+
+<img src="${movie.poster}">
+
+</div>
+
+<h3>${movie.title}</h3>
+
+</div>
+
+</a>
+`;
+
+});
+
+
+function toggleWishlist(e,id,title,poster){
+
+e.preventDefault();
+e.stopPropagation();
+
+let wishlist = getWishlist();
+
+const exists = wishlist.find(movie => movie.id == id);
+
+if(exists){
+wishlist = wishlist.filter(movie => movie.id != id);
+}else{
+wishlist.unshift({
+id,
+title,
+poster
+});
+}
+
+saveWishlist(wishlist);
+
+location.reload();
+
+}
+
+</script>
+
+
+</body>
+</html>

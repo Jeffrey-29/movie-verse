@@ -1,0 +1,315 @@
+<header class="navbar">
+
+<div class="nav-left">
+
+<button class="menu-btn" onclick="toggleGenre()">
+☰
+</button>
+
+</div>
+
+
+<div class="nav-center">
+<a href="/" class="logo">
+🎬 Movieverse
+</a>
+</div>
+
+
+<div class="nav-right">
+
+<button onclick="toggleFilters()" class="filter-btn-header">
+filters
+</button>
+
+<a href="/wishlist" class="wishlist-link">
+❤ Wishlist
+</a>
+
+<form action="/search" method="get" class="nav-search">
+
+<input 
+type="text"
+name="movie"
+id="searchInput"
+placeholder="Search movies..."
+autocomplete="off"
+>
+
+<div id="suggestions" class="suggestions"></div>
+
+</form>
+
+</div>
+
+</header>
+
+<div id="filterDropdown" class="filter-dropdown">
+
+<select id="type">
+<option value="movie">Movies</option>
+<option value="tv">Series</option>
+</select>
+
+<select id="year">
+<option value="">Year</option>
+<option value="2024">2024</option>
+<option value="2023">2023</option>
+<option value="2022">2022</option>
+<option value="2021">2021</option>
+<option value="2020">2020</option>
+<option value="2019">2019</option>
+</select>
+
+<select id="rating">
+<option value="">Rating</option>
+<option value="6">Good (6+)</option>
+<option value="7">Very Good (7+)</option>
+<option value="8">Excellent (8+)</option>
+<option value="9">Top Rated (9+)</option>
+</select>
+
+<select id="certificate">
+<option value="">Certificate</option>
+<option value="U">U</option>
+<option value="UA">UA</option>
+<option value="A">A</option>
+</select>
+
+<select id="sort">
+<option value="popularity.desc">Popular</option>
+<option value="vote_average.desc">Top Rated</option>
+<option value="release_date.desc">Latest</option>
+<option value="vote_count.desc">Most Voted</option>
+</select>
+
+<button onclick="applyFilters()" class="filter-apply">
+Apply Filters
+</button>
+
+</div>
+
+
+<!-- ================= GENRE MENU ================= -->
+
+ <div id="genreMenu" class="genre-menu">
+
+<% if(genres && genres.length > 0){ %>
+
+<% genres.forEach(genre => { %>
+
+<a 
+href="/genre/<%= genre.type %>/<%= genre.id %>" 
+class="genre-item"
+>
+<%= genre.name %>
+</a>
+
+<% }) %>
+
+<% } %>
+
+</div>
+
+
+<script>
+
+function toggleGenre(){
+const menu = document.getElementById("genreMenu")
+menu.classList.toggle("active")
+}
+
+// close when clicking outside
+
+document.addEventListener("click", function(e){
+
+const menu = document.getElementById("genreMenu")
+const button = document.querySelector(".menu-btn")
+
+if(!menu.contains(e.target) && !button.contains(e.target)){
+menu.classList.remove("active")
+}
+
+})
+
+</script>
+
+<script>
+
+const input = document.getElementById("searchInput")
+const suggestions = document.getElementById("suggestions")
+
+let selectedIndex = -1
+let suggestionItems = []
+
+input.addEventListener("input", async () => {
+
+const query = input.value
+
+if(query.length < 2){
+suggestions.style.display = "none"
+return
+}
+
+const res = await fetch(`/suggest?q=${query}`)
+const data = await res.json()
+
+suggestions.innerHTML = ""
+selectedIndex = -1
+
+data.forEach(movie => {
+
+const div = document.createElement("div")
+
+div.classList.add("suggest-item")
+
+div.textContent = movie.title || movie.name
+
+div.onclick = () => {
+window.location.href = `/movie/${movie.id}`
+}
+
+suggestions.appendChild(div)
+
+})
+
+
+
+suggestionItems = document.querySelectorAll(".suggest-item")
+
+suggestions.style.display = "block"
+
+})
+
+
+
+/* Arrow navigation */
+
+input.addEventListener("keydown", (e)=>{
+
+if(!suggestionItems.length) return
+
+if(e.key === "ArrowDown"){
+
+selectedIndex++
+
+if(selectedIndex >= suggestionItems.length){
+selectedIndex = 0
+}
+
+updateSelection()
+
+}
+
+if(e.key === "ArrowUp"){
+
+selectedIndex--
+
+if(selectedIndex < 0){
+selectedIndex = suggestionItems.length - 1
+}
+
+updateSelection()
+
+}
+
+if(e.key === "Enter" && selectedIndex > -1){
+
+e.preventDefault()
+
+suggestionItems[selectedIndex].click()
+
+}
+
+})
+
+
+
+function updateSelection(){
+
+suggestionItems.forEach(item => 
+item.classList.remove("active")
+)
+
+suggestionItems[selectedIndex]
+.classList.add("active")
+
+}
+
+
+
+/* close outside */
+
+document.addEventListener("click", (e)=>{
+
+if(!document.querySelector(".nav-search")
+.contains(e.target)){
+
+suggestions.style.display = "none"
+
+}
+
+})
+
+</script>
+
+<script>
+
+window.filterPage = 1
+window.filterLoading = false
+window.filterUrl = ""
+
+function toggleFilters(){
+const dropdown = document.getElementById("filterDropdown")
+
+if(dropdown.style.display === "flex"){
+dropdown.style.display = "none"
+}else{
+dropdown.style.display = "flex"
+}
+}
+
+async function applyFilters(){
+
+const type = document.getElementById("type").value
+const year = document.getElementById("year").value
+const rating = document.getElementById("rating").value
+const sort = document.getElementById("sort").value
+const certificate = document.getElementById("certificate").value
+
+window.filterPage = 1
+window.filterLoading = false
+window.filterUrl = `/filter?type=${type}`
+
+if(year) window.filterUrl += `&year=${year}`
+if(rating) window.filterUrl += `&rating=${rating}`
+if(sort) window.filterUrl += `&sort=${sort}`
+if(certificate) window.filterUrl += `&certificate=${certificate}`
+
+const res = await fetch(window.filterUrl)
+const data = await res.json()
+
+const section = document.getElementById("filterResults")
+const grid = document.getElementById("filterGrid")
+
+section.style.display = "block"
+grid.innerHTML = ""
+
+/* Hide other sections */
+
+document.querySelectorAll(
+".top-picks, .movie-row, #continueSection, #recommendSection, #watchedSection"
+).forEach(el => {
+el.style.display = "none"
+})
+
+renderMovies(data.results)
+
+document.getElementById("filterDropdown").style.display = "none"
+
+}
+
+
+
+
+</script>
