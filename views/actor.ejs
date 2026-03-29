@@ -7,6 +7,7 @@
 </head>
 
 <body>
+<%- include("partials/header") %>
 
 <div class="actor-hero">
 
@@ -53,7 +54,7 @@ src="<%= actor.profile_path
 
 <% movies.forEach(movie => { %>
 
-<a href="/movie/<%= movie.id %>" class="movie-link">
+<a href="/<%= movie.first_air_date ? 'tv' : 'movie' %>/<%= movie.id %>" class="movie-link">
 
 <div class="similar-card">
 

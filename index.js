@@ -1,7 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
-
 dotenv.config();
+
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -9,7 +9,9 @@ const port = process.env.PORT || 3000;
 const TMDB_TOKEN = process.env.TMDB_TOKEN;
 
 app.set("view engine", "ejs");
-app.use(express.static("public"));
+app.use(express.static("public", {
+maxAge: 0
+}));
 
 /* ================= CACHE ================= */
 
@@ -18,7 +20,64 @@ let cachedLatest = [];
 let cachedTopRated = [];
 let cachedGenres = [];
 
-/* ================= HOME PAGE ================= */
+
+/* ================= GLOBAL GENRES ================= */
+app.use(async (req,res,next)=>{
+
+try{
+
+if(!cachedGenres.length){
+
+const headers = {
+Authorization:`Bearer ${TMDB_TOKEN}`,
+accept:"application/json"
+}
+
+const [movieGenres,tvGenres] = await Promise.all([
+
+fetch(
+"https://api.themoviedb.org/3/genre/movie/list",
+{headers}
+),
+
+fetch(
+"https://api.themoviedb.org/3/genre/tv/list",
+{headers}
+)
+
+]);
+
+const movieData = await movieGenres.json()
+const tvData = await tvGenres.json()
+
+const movie = (movieData.genres || []).map(g=>({
+...g,
+type:"movie"
+}))
+
+const tv = (tvData.genres || []).map(g=>({
+...g,
+type:"tv"
+}))
+
+cachedGenres = [...movie,...tv]
+
+}
+
+res.locals.genres = cachedGenres
+
+}catch{
+
+res.locals.genres = []
+
+}
+
+next()
+
+})
+
+
+/* ================= HOME ================= */
 
 app.get("/", async (req, res) => {
 
@@ -32,437 +91,582 @@ accept: "application/json"
 let trending = [];
 let latest = [];
 let topRated = [];
-let genres = [];
+let topPicks = [];
 
 
 /* ---------- Trending ---------- */
 
+/* ---------- Trending ---------- */
+
+
 try {
 
-const resTrending = await fetch(
-`https://api.themoviedb.org/3/trending/movie/week`,
-{ headers }
-);
+const [movieTrending, tvTrending] = await Promise.all([
+fetch("https://api.themoviedb.org/3/trending/movie/week",{headers}),
+fetch("https://api.themoviedb.org/3/trending/tv/week",{headers})
+]);
 
-if (!resTrending.ok) throw new Error("Trending failed");
+const movieData = await movieTrending.json();
+const tvData = await tvTrending.json();
 
-const data = await resTrending.json();
+trending = [
+...(movieData.results || []),
+...(tvData.results || [])
+];
 
-trending = data.results || [];
+/* fallback if empty */
+
+if(!trending.length){
+
+const [moviePopular, tvPopular] = await Promise.all([
+fetch("https://api.themoviedb.org/3/movie/popular",{headers}),
+fetch("https://api.themoviedb.org/3/tv/popular",{headers})
+]);
+
+const moviePop = await moviePopular.json();
+const tvPop = await tvPopular.json();
+
+trending = [
+...(moviePop.results || []),
+...(tvPop.results || [])
+];
+
+}
+
 cachedTrending = trending;
 
-} catch (error) {
+/* ---------- Top Picks With Trailer ---------- */
 
-console.log("Trending Error:", error.message);
+topPicks = await Promise.all(
+trending.slice(0,5).map(async(movie)=>{
+
+try{
+
+const type = movie.first_air_date ? "tv" : "movie"
+
+const videoRes = await fetch(
+`https://api.themoviedb.org/3/${type}/${movie.id}/videos`,
+{headers}
+)
+
+const videoData = await videoRes.json()
+
+const trailer =
+videoData.results?.find(
+v => v.type === "Trailer" && v.site === "YouTube"
+) ||
+videoData.results?.find(
+v => v.type === "Teaser" && v.site === "YouTube"
+) ||
+videoData.results?.find(
+v => v.site === "YouTube"
+)
+return {
+...movie,
+trailer: trailer?.key || null
+}
+
+}catch{
+
+return movie
+
+}
+
+})
+)
+
+} catch {
+
 trending = cachedTrending;
 
 }
 
+/* ---------- Latest ---------- */
 
 /* ---------- Latest ---------- */
 
 try {
 
-const resLatest = await fetch(
-`https://api.themoviedb.org/3/movie/now_playing`,
-{ headers }
-);
+const [movieLatest, tvLatest] = await Promise.all([
+fetch("https://api.themoviedb.org/3/movie/popular",{headers}),
+fetch("https://api.themoviedb.org/3/tv/popular",{headers})
+]);
 
-if (!resLatest.ok) throw new Error("Latest failed");
+const movieData = await movieLatest.json();
+const tvData = await tvLatest.json();
 
-const data = await resLatest.json();
+latest = [
+...(movieData.results || []),
+...(tvData.results || [])
+]
 
-latest = data.results || [];
 cachedLatest = latest;
 
-} catch (error) {
+} catch {
 
-console.log("Latest Error:", error.message);
 latest = cachedLatest;
 
 }
-
 
 /* ---------- Top Rated ---------- */
 
 try {
 
-const resTop = await fetch(
-`https://api.themoviedb.org/3/movie/top_rated`,
-{ headers }
-);
+const [movieTop, tvTop] = await Promise.all([
+fetch("https://api.themoviedb.org/3/movie/top_rated",{headers}),
+fetch("https://api.themoviedb.org/3/tv/top_rated",{headers})
+]);
 
-if (!resTop.ok) throw new Error("Top rated failed");
+const movieData = await movieTop.json();
+const tvData = await tvTop.json();
 
-const data = await resTop.json();
+topRated = [
+...(movieData.results || []),
+...(tvData.results || [])
+]
 
-topRated = data.results || [];
 cachedTopRated = topRated;
 
-} catch (error) {
+} catch {
 
-console.log("Top Rated Error:", error.message);
 topRated = cachedTopRated;
 
 }
 
 
-/* ---------- Genres ---------- */
-
-try {
-
-const resGenre = await fetch(
-`https://api.themoviedb.org/3/genre/movie/list`,
-{ headers }
-);
-
-if (!resGenre.ok) throw new Error("Genre failed");
-
-const data = await resGenre.json();
-
-genres = data.genres || [];
-cachedGenres = genres;
-
-} catch (error) {
-
-console.log("Genre Error:", error.message);
-genres = cachedGenres;
-
-}
-
-
-res.render("index.ejs", {
-movies: null,
+res.render("index", {
+movies:null,
+topPicks,
 trending,
 latest,
 topRated,
-genres,
-searchQuery: null,
-notFound: false
-});
-
-} catch (error) {
-
-console.log("Home Error:", error.message);
-
-res.render("index.ejs", {
-movies:null,
-trending:[],
-latest:[],
-topRated:[],
-genres:[],
 searchQuery:null,
 notFound:false
 });
 
+} catch {
+
+res.render("index",{
+movies:null,
+topPicks:[],
+trending:[],
+latest:[],
+topRated:[],
+searchQuery:null,
+notFound:false
+})
+
 }
 
 });
-
 
 
 /* ================= SEARCH ================= */
 
-app.get("/search", async (req, res) => {
+app.get("/search", async (req,res)=>{
 
-try {
+try{
 
-const movie = req.query.movie;
+const query = req.query.movie
 
 const headers = {
-Authorization: `Bearer ${TMDB_TOKEN}`,
-accept: "application/json"
-};
+Authorization:`Bearer ${TMDB_TOKEN}`,
+accept:"application/json"
+}
 
-const responses = await Promise.allSettled([
-fetch(`https://api.themoviedb.org/3/search/multi?query=${encodeURIComponent(movie)}&page=1`, { headers }),
-fetch(`https://api.themoviedb.org/3/search/multi?query=${encodeURIComponent(movie)}&page=2`, { headers }),
-fetch(`https://api.themoviedb.org/3/search/multi?query=${encodeURIComponent(movie)}&page=3`, { headers }),
-fetch(`https://api.themoviedb.org/3/search/multi?query=${encodeURIComponent(movie)}&page=4`, { headers })
-]);
-
-let movies = [];
-
-for (const resItem of responses) {
-
-if (resItem.status === "fulfilled") {
-
-const data = await resItem.value.json();
-
-movies.push(
-...(data.results || []).filter(
-item => item.media_type === "movie"
+const response = await fetch(
+`https://api.themoviedb.org/3/search/multi?query=${encodeURIComponent(query)}&include_adult=false`,
+{headers}
 )
-);
 
-}
+const data = await response.json()
 
-}
+const movies = data.results.filter(
+item => item.media_type === "movie" || item.media_type === "tv"
+)
 
-movies = movies.sort((a, b) => b.popularity - a.popularity);
-
-
-/* ---------- OMDB fallback ---------- */
-
-if (movies.length === 0) {
-
-const omdb = await fetch(
-`https://www.omdbapi.com/?apikey=${process.env.OMDB_API_KEY}&s=${movie}`
-);
-
-const omdbData = await omdb.json();
-
-movies = (omdbData.Search || []).map(m => ({
-id: m.imdbID,
-title: m.Title,
-release_date: m.Year,
-poster_path: m.Poster !== "N/A" ? m.Poster : null,
-isOMDB: true
-}));
-
-}
-
-res.render("index.ejs", {
+res.render("index",{
 movies,
 trending:null,
 latest:null,
 topRated:null,
-genres:null,
-searchQuery: movie,
-notFound: movies.length === 0
-});
+searchQuery:query,
+notFound:movies.length===0
+})
 
-} catch (error) {
+}catch{
 
-console.log(error.message);
-
-res.render("index.ejs", {
-movies: [],
-trending:null,
-latest:null,
-topRated:null,
-genres:null,
-searchQuery: null,
-notFound: true
-});
+res.redirect("/")
 
 }
 
-});
-
+})
 
 
 /* ================= SEARCH SUGGEST ================= */
 
-app.get("/suggest", async (req,res)=>{
+app.get("/suggest", async(req,res)=>{
 
-try {
+try{
 
-const query = req.query.q;
+const query = req.query.q
 
-if(!query || query.length < 2){
-return res.json([]);
+if(!query || query.length<2){
+return res.json([])
 }
 
 const headers = {
-Authorization: `Bearer ${TMDB_TOKEN}`,
-accept: "application/json"
-};
+Authorization:`Bearer ${TMDB_TOKEN}`,
+accept:"application/json"
+}
 
 const response = await fetch(
-`https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(query)}`,
+`https://api.themoviedb.org/3/search/multi?query=${encodeURIComponent(query)}&include_adult=false`,
 {headers}
-);
+)
 
-const data = await response.json();
+const data = await response.json()
 
-res.json(data.results.slice(0,5));
+const results = data.results.filter(
+item => item.media_type === "movie" || item.media_type === "tv"
+)
 
-} catch{
-res.json([]);
+res.json(results.slice(0,5))
+
+}catch{
+
+res.json([])
+
 }
 
-});
+})
 
 
+/* ================= MOVIE / TV ================= */
 
-/* ================= MOVIE DETAILS ================= */
+app.get("/movie/:id", async (req,res)=>{
 
-app.get("/movie/:id", async (req, res) => {
+try{
 
-try {
-
-const movieId = req.params.id;
+const id = req.params.id
 
 const headers = {
-Authorization: `Bearer ${TMDB_TOKEN}`,
-accept: "application/json"
-};
+Authorization:`Bearer ${TMDB_TOKEN}`,
+accept:"application/json"
+}
+
+/* detect movie or tv */
+
+let movie
+let isTV = false
+
+let movieRes = await fetch(
+`https://api.themoviedb.org/3/movie/${id}`,
+{headers}
+)
+
+movie = await movieRes.json()
+
+if(movie.success === false || movie.status_code === 34){
+
+movieRes = await fetch(
+`https://api.themoviedb.org/3/tv/${id}`,
+{headers}
+)
+
+movie = await movieRes.json()
+
+isTV = true
+
+}
 
 
-/* ---------- Movie ---------- */
-
-const movieRes = await fetch(
-`https://api.themoviedb.org/3/movie/${movieId}`,
-{ headers }
-);
-
-const movie = await movieRes.json();
-
-
-/* ---------- Providers ---------- */
+/* providers */
 
 const providerRes = await fetch(
-`https://api.themoviedb.org/3/movie/${movieId}/watch/providers`,
-{ headers }
-);
+`https://api.themoviedb.org/3/${isTV ? "tv" : "movie"}/${id}/watch/providers`,
+{headers}
+)
 
-const providerData = await providerRes.json();
+const providerData = await providerRes.json()
 
-const providers = providerData.results?.IN || providerData.results?.US || null;
+const providers =
+providerData.results?.IN ||
+providerData.results?.US ||
+null
 
 
-/* ---------- Trailer ---------- */
+/* trailer */
 
 const videoRes = await fetch(
-`https://api.themoviedb.org/3/movie/${movieId}/videos`,
-{ headers }
-);
+`https://api.themoviedb.org/3/${isTV?"tv":"movie"}/${id}/videos`,
+{headers}
+)
 
-const videoData = await videoRes.json();
+const videoData = await videoRes.json()
 
 const trailer = videoData.results?.find(
-v => v.type === "Trailer" && v.site === "YouTube"
-);
+v=>v.type==="Trailer" && v.site==="YouTube"
+)
 
 
-/* ---------- Cast ---------- */
+/* cast */
 
 const castRes = await fetch(
-`https://api.themoviedb.org/3/movie/${movieId}/credits`,
-{ headers }
-);
+`https://api.themoviedb.org/3/${isTV?"tv":"movie"}/${id}/credits`,
+{headers}
+)
 
-const castData = await castRes.json();
+const castData = await castRes.json()
 
-const cast = castData.cast?.slice(0,10);
+const cast = castData.cast?.slice(0,10)
 
 
-/* ---------- Similar ---------- */
+/* similar */
 
 const similarRes = await fetch(
-`https://api.themoviedb.org/3/movie/${movieId}/similar`,
-{ headers }
-);
+`https://api.themoviedb.org/3/${isTV?"tv":"movie"}/${id}/similar`,
+{headers}
+)
 
-const similarData = await similarRes.json();
+const similarData = await similarRes.json()
 
-const similar = similarData.results?.slice(0,12);
+const similar = similarData.results?.slice(0,12)
 
 
-res.render("movie", {
+res.render("movie",{
 movie,
 providers,
 trailer,
 cast,
 similar
-});
+})
 
-} catch {
+}catch{
 
-console.log("Movie Fetch Failed");
-
-res.redirect("/");
+res.redirect("/")
 
 }
 
-});
+})
 
 
-/* ================= ACTOR PAGE ================= */
+/* ================= ACTOR ================= */
 
-app.get("/actor/:id", async (req,res)=>{
+app.get("/actor/:id", async(req,res)=>{
 
-try {
+try{
 
-const id = req.params.id;
+const id = req.params.id
 
 const headers = {
-Authorization: `Bearer ${TMDB_TOKEN}`,
-accept: "application/json"
-};
+Authorization:`Bearer ${TMDB_TOKEN}`,
+accept:"application/json"
+}
 
 const actorRes = await fetch(
 `https://api.themoviedb.org/3/person/${id}`,
 {headers}
-);
+)
 
-const actor = await actorRes.json();
+const actor = await actorRes.json()
 
 
 const movieRes = await fetch(
-`https://api.themoviedb.org/3/person/${id}/movie_credits`,
+`https://api.themoviedb.org/3/person/${id}/combined_credits`,
 {headers}
-);
+)
 
-const movieData = await movieRes.json();
+const movieData = await movieRes.json()
 
-const movies = movieData.cast.slice(0,12);
+const movies = movieData.cast.slice(0,12)
 
 res.render("actor",{
 actor,
 movies
-});
+})
 
-} catch {
+}catch{
 
-res.redirect("/");
+res.redirect("/")
 
 }
 
-});
+})
+
+/* ================= FILTER ================= */
+
+app.get("/filter", async (req,res)=>{
+
+try{
+
+const { type, year, rating, sort, page, certificate } = req.query;
+const headers = {
+Authorization:`Bearer ${TMDB_TOKEN}`,
+accept:"application/json"
+}
+
+let url = `https://api.themoviedb.org/3/discover/${type || "movie"}?page=${page || 1}&`;
+
+if(year){
+url += `primary_release_year=${year}&`
+}
+
+if(rating){
+url += `vote_average.gte=${rating}&`
+}
+
+if(certificate){
+url += `certification_country=IN&certification=${certificate}&`
+}
+
+if(sort){
+url += `sort_by=${sort}&`
+}
+
+const response = await fetch(url,{headers})
+const data = await response.json()
+
+res.json(data)
+
+}catch{
+
+res.json({results:[]})
+
+}
+
+})
+
 
 
 /* ================= GENRE ================= */
 
-app.get("/genre/:id", async (req,res)=>{
+app.get("/genre/:type/:id", async(req,res)=>{
+
+try{
+
+const id = req.params.id
+const type = req.params.type
+
+const headers = {
+Authorization:`Bearer ${TMDB_TOKEN}`,
+accept:"application/json"
+}
+
+/* Get genre name */
+
+const genreList = cachedGenres || []
+const genre = genreList.find(g => g.id == id && g.type == type)
+
+/* Get movies */
+
+const response = await fetch(
+`https://api.themoviedb.org/3/discover/${type}?with_genres=${id}`,
+{headers}
+)
+
+const data = await response.json()
+
+res.render("index",{
+movies:data.results || [],
+genreName: genre ? genre.name : "Genre",
+trending:null,
+latest:null,
+topRated:null,
+searchQuery:null,
+notFound:(data.results || []).length===0
+})
+
+}catch{
+
+res.redirect("/")
+
+}
+
+})
+
+app.get("/wishlist",(req,res)=>{
+
+res.render("wishlist")
+
+})
+
+
+app.get("/recommend/:id", async (req, res) => {
+
+const id = req.params.id;
 
 try {
 
 const headers = {
-Authorization: `Bearer ${TMDB_TOKEN}`,
-accept: "application/json"
+Authorization:`Bearer ${TMDB_TOKEN}`,
+accept:"application/json"
 };
 
-const genreId = req.params.id;
+/* detect movie or tv */
 
-const response = await fetch(
-`https://api.themoviedb.org/3/discover/movie?with_genres=${genreId}`,
+let movieRes = await fetch(
+`https://api.themoviedb.org/3/movie/${id}`,
 {headers}
 );
 
-const data = await response.json();
+let movie = await movieRes.json();
+let isTV = false;
 
-res.render("index.ejs",{
-movies:data.results,
-trending:null,
-latest:null,
-topRated:null,
-genres:null,
-searchQuery:null,
-notFound:false
-});
+if(movie.success === false || movie.status_code === 34){
 
-} catch{
+movieRes = await fetch(
+`https://api.themoviedb.org/3/tv/${id}`,
+{headers}
+);
 
-console.log("Genre Error");
-res.redirect("/");
+movie = await movieRes.json();
+isTV = true;
+
+}
+
+const genre = movie.genres?.[0]?.id;
+
+if(!genre) return res.json([]);
+
+
+/* fetch recommendations based on genre */
+
+const [popular, topRated] = await Promise.all([
+
+fetch(
+`https://api.themoviedb.org/3/discover/${isTV?"tv":"movie"}?with_genres=${genre}&sort_by=popularity.desc`,
+{headers}
+),
+
+fetch(
+`https://api.themoviedb.org/3/discover/${isTV?"tv":"movie"}?with_genres=${genre}&sort_by=vote_average.desc&vote_count.gte=100`,
+{headers}
+)
+
+]);
+
+const popularData = await popular.json();
+const topData = await topRated.json();
+
+const results = [
+...(popularData.results || []),
+...(topData.results || [])
+];
+
+res.json(results.slice(0,12));
+
+} catch (error) {
+
+console.log(error.message);
+res.json([]);
 
 }
 
 });
 
 
-app.listen(port, () => {
-console.log(`Server running on port ${port}`);
-});
+
+app.listen(port,()=>{
+console.log(`Server running on port ${port}`)
+})

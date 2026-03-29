@@ -2,24 +2,28 @@
 <html>
 
 <head>
-<title><%= movie.title %></title>
+<title><%= movie.title || movie.name %></title>
 <link rel="stylesheet" href="/styles.css">
 </head>
 
 <body>
+
+<%- include("partials/header") %>
 
 <%
 const stream = providers?.flatrate || [];
 const rent = providers?.rent || [];
 const buy = providers?.buy || [];
 
-const justWatchLink = `https://www.justwatch.com/in/search?q=${encodeURIComponent(movie.title)}`;
+const title = movie.title || movie.name;
+
+const justWatchLink =
+`https://www.justwatch.com/in/search?q=${encodeURIComponent(title)}`;
 
 const backdrop = movie.backdrop_path 
 ? "https://image.tmdb.org/t/p/original" + movie.backdrop_path
 : "https://via.placeholder.com/1920x800?text=Movieverse";
 %>
-
 
 
 <!-- ================= HERO ================= -->
@@ -32,6 +36,24 @@ style="background-image:url('<%= backdrop %>')">
 <div class="hero-content">
 
 <div class="poster">
+   <button 
+class="wishlist-btn wishlist-btn-large"
+data-id="<%= movie.id %>"
+data-title="<%= movie.title || movie.name %>"
+data-poster="https://image.tmdb.org/t/p/w500<%= movie.poster_path %>"
+onclick="toggleWishlist(event,this)"
+>
+♡
+</button>
+<button 
+class="watched-btn"
+data-id="<%= movie.id %>"
+data-title="<%= movie.title || movie.name %>"
+data-poster="https://image.tmdb.org/t/p/w500<%= movie.poster_path %>"
+onclick="toggleWatched(event,this)"
+>
+✓ Watched
+</button>
 
 <img 
 src="<%= movie.poster_path 
@@ -57,18 +79,19 @@ class="stream-badge">
 </div>
 
 
-
 <div class="hero-info">
 
-<h1><%= movie.title %></h1>
+<h1><%= movie.title || movie.name %></h1>
 
 <div class="meta">
 
 <span>⭐ <%= movie.vote_average?.toFixed(1) %></span>
 
-<span>📅 <%= movie.release_date %></span>
+<span>📅 <%= movie.release_date || movie.first_air_date %></span>
 
+<% if(movie.runtime){ %>
 <span>🎬 <%= movie.runtime %> min</span>
+<% } %>
 
 </div>
 
@@ -90,13 +113,10 @@ class="stream-badge">
 
 <div class="watch-trailer-container">
 
-<!-- LEFT SIDE WATCH -->
-
 <div class="watch-left">
 
 <h2>Where to Watch</h2>
 
-<!-- STREAM -->
 <% if(stream.length > 0){ %>
 
 <h3>Stream</h3>
@@ -121,7 +141,6 @@ title="<%= service.provider_name %>">
 
 
 
-<!-- RENT -->
 <% if(rent.length > 0){ %>
 
 <h3>Rent</h3>
@@ -146,7 +165,6 @@ title="<%= service.provider_name %>">
 
 
 
-<!-- BUY -->
 <% if(buy.length > 0){ %>
 
 <h3>Buy</h3>
@@ -182,13 +200,11 @@ Not available in your region
 
 
 
-<!-- RIGHT SIDE TRAILER -->
-
 <div class="trailer-right">
 
-<% if(trailer){ %>
-
 <h2>Trailer</h2>
+
+<% if(trailer){ %>
 
 <div class="trailer-card">
 
@@ -201,8 +217,6 @@ allowfullscreen>
 </div>
 
 <% } else { %>
-
-<h2>Trailer</h2>
 
 <div class="trailer-card">
 
@@ -219,8 +233,6 @@ Trailer not available
 </div>
 
 
-
-<!-- ================= CAST ================= -->
 
 <!-- ================= CAST ================= -->
 
@@ -277,7 +289,7 @@ src="<%= actor.profile_path
 
 <% similar.forEach(movie => { %>
 
-<a href="/movie/<%= movie.id %>" class="movie-link">
+<a href="/<%= movie.first_air_date ? 'tv' : 'movie' %>/<%= movie.id %>" class="movie-link">
 
 <div class="similar-card">
 
@@ -286,7 +298,7 @@ src="<%= movie.poster_path
 ? 'https://image.tmdb.org/t/p/w500' + movie.poster_path 
 : 'https://via.placeholder.com/300x450' %>">
 
-<h3><%= movie.title %></h3>
+<h3><%= movie.title || movie.name %></h3>
 
 </div>
 
@@ -310,6 +322,250 @@ src="<%= movie.poster_path
 
 </div>
 
+
+
+<!-- ================= CONTINUE WATCHING SAVE ================= -->
+
+<script>
+
+const movieData = {
+id: "<%= movie.id %>",
+title: "<%= movie.title || movie.name %>",
+poster: "<%= movie.poster_path 
+? 'https://image.tmdb.org/t/p/w500' + movie.poster_path 
+: '' %>",
+type: "<%= movie.first_air_date ? 'tv' : 'movie' %>",
+progress:0
+};
+
+let watched = JSON.parse(localStorage.getItem("watched")) || [];
+
+/* don't add to continue watching if watched */
+
+if(!watched.find(movie => movie.id === movieData.id)){
+
+let recent = JSON.parse(localStorage.getItem("recentMovies")) || [];
+
+recent = recent.filter(m => m.id !== movieData.id);
+
+recent.unshift(movieData);
+
+recent = recent.slice(0,10);
+
+localStorage.setItem("recentMovies", JSON.stringify(recent));
+
+}
+
+</script>
+<script>
+
+function getWishlist(){
+return JSON.parse(localStorage.getItem("wishlist")) || [];
+}
+
+function saveWishlist(list){
+localStorage.setItem("wishlist", JSON.stringify(list));
+}
+
+function toggleWishlist(e,id,title,poster){
+
+e.preventDefault();
+
+let wishlist = getWishlist();
+
+const exists = wishlist.find(movie => movie.id == id);
+
+const btn = e.target;
+
+if(exists){
+
+wishlist = wishlist.filter(movie => movie.id != id);
+btn.classList.remove("active");
+btn.innerHTML = "♡";
+
+}else{
+
+wishlist.unshift({
+id,
+title,
+poster
+});
+
+btn.classList.add("active");
+btn.innerHTML = "❤";
+
+}
+
+saveWishlist(wishlist);
+
+}
+
+
+/* Sync heart on page load */
+
+document.addEventListener("DOMContentLoaded", ()=>{
+
+const wishlist = getWishlist();
+
+document.querySelectorAll(".wishlist-btn").forEach(btn=>{
+
+const id = btn.dataset.id;
+
+if(wishlist.find(movie => movie.id == id)){
+btn.classList.add("active");
+btn.innerHTML = "❤";
+}
+
+});
+
+});
+
+</script>
+<script>
+
+function getWishlist(){
+return JSON.parse(localStorage.getItem("wishlist")) || [];
+}
+
+function saveWishlist(list){
+localStorage.setItem("wishlist", JSON.stringify(list));
+}
+
+
+function toggleWishlist(e,btn){
+
+e.preventDefault();
+
+const id = btn.dataset.id;
+const title = btn.dataset.title;
+const poster = btn.dataset.poster;
+
+let wishlist = getWishlist();
+
+const exists = wishlist.find(movie => movie.id == id);
+
+if(exists){
+
+wishlist = wishlist.filter(movie => movie.id != id);
+btn.classList.remove("active");
+btn.innerHTML = "♡";
+
+}else{
+
+wishlist.unshift({
+id,
+title,
+poster
+});
+
+btn.classList.add("active");
+btn.innerHTML = "❤";
+
+}
+
+saveWishlist(wishlist);
+
+}
+
+
+/* Load state */
+
+document.addEventListener("DOMContentLoaded", ()=>{
+
+const wishlist = getWishlist();
+
+document.querySelectorAll(".wishlist-btn").forEach(btn=>{
+
+const id = btn.dataset.id;
+
+if(wishlist.find(movie => movie.id == id)){
+btn.classList.add("active");
+btn.innerHTML = "❤";
+}
+
+});
+
+});
+
+</script>
+<script>
+
+function getWatched(){
+return JSON.parse(localStorage.getItem("watched")) || [];
+}
+
+function saveWatched(list){
+localStorage.setItem("watched", JSON.stringify(list));
+}
+
+function toggleWatched(e,btn){
+
+e.stopPropagation();
+
+const id = btn.dataset.id;
+const title = btn.dataset.title;
+const poster = btn.dataset.poster;
+
+let watched = getWatched();
+
+const exists = watched.find(movie => movie.id == id);
+
+if(exists){
+
+watched = watched.filter(movie => movie.id != id);
+
+btn.classList.remove("active");
+btn.innerHTML = "✓ Watched";
+
+}else{
+
+watched.unshift({
+id,
+title,
+poster
+});
+
+btn.classList.add("active");
+btn.innerHTML = "✓ Watched";
+
+}
+
+/* remove from continue watching */
+
+let recent = JSON.parse(localStorage.getItem("recentMovies")) || [];
+
+recent = recent.filter(movie => movie.id != id);
+
+localStorage.setItem("recentMovies", JSON.stringify(recent));
+
+saveWatched(watched);
+
+/* refresh homepage sections */
+
+setTimeout(()=>{
+location.reload();
+},200);
+
+}
+
+
+document.addEventListener("DOMContentLoaded",()=>{
+
+const watched = getWatched();
+
+document.querySelectorAll(".watched-btn").forEach(btn=>{
+
+const id = btn.dataset.id;
+
+if(watched.find(movie => movie.id == id)){
+btn.classList.add("active");
+}
+
+});
+
+});
+
+</script>
 </body>
 
 </html>

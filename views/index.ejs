@@ -10,104 +10,172 @@
 <link rel="stylesheet" href="/styles.css">
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
 
 </head>
 
-
 <body>
+
+<%- include("partials/header") %>
 
 <div class="container">
 
-<h1>Movieverse</h1>
+    <%
+const title =
+typeof genreName !== "undefined"
+? genreName
+: (typeof searchQuery !== "undefined" && searchQuery
+? `Search Results for "${searchQuery}"`
+: "Results");
+%>
 
 
-<!-- ================= SEARCH ================= -->
 
-<div class="search-wrapper">
+<!-- ================= GENRE RESULTS ================= -->
 
-<form action="/search" method="get">
+<% if(movies && movies.length > 0){ %>
 
-<input 
-type="text" 
-name="movie" 
-placeholder="Search movie..."
-autocomplete="off"
-required
+<h2><%= title %></h2>
+<div class="movie-grid">
+    <div id="loading" class="loading">
+Loading more movies...
+</div>
+
+<% movies.forEach(movie => { 
+const start = movie.release_date || movie.first_air_date;
+const startYear = start ? start.substring(0,4) : "";
+%>
+
+<a href="/<%= movie.first_air_date ? 'tv' : 'movie' %>/<%= movie.id %>" class="movie-link">
+
+<div class="movie-card-small">
+
+<img 
+src="<%= movie.poster_path 
+? 'https://image.tmdb.org/t/p/w500' + movie.poster_path 
+: 'https://via.placeholder.com/300x450' %>"
 >
 
-<button type="submit">Search</button>
-
-</form>
-
-<div id="suggestions" class="suggestions"></div>
+<h3><%= movie.title || movie.name %></h3>
+<p><%= startYear %></p>
 
 </div>
 
+</a>
 
+<% }) %>
 
-<!-- ================= NOT FOUND ================= -->
-
-<% if (typeof notFound !== "undefined" && notFound) { %>
-
-<div class="not-found">
-No movies found 😕
 </div>
+
+<% } else { %>
+<% if(topPicks && topPicks.length > 0){ %>
+
+<h2>Top Picks</h2>
+
+<div class="top-picks">
+
+<% topPicks.forEach(movie => { %>
+
+<div 
+class="hero-card"
+data-id="<%= movie.id %>"
+data-type="<%= movie.first_air_date ? 'tv' : 'movie' %>"
+>
+
+<img class="hero-image"
+src="https://image.tmdb.org/t/p/original<%= movie.backdrop_path %>">
+
+<% if(movie.trailer && movie.trailer !== "undefined"){ %>
+<div class="hero-video">
+<iframe
+src=""
+data-src="https://www.youtube-nocookie.com/embed/<%= movie.trailer %>?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1"
+allow="autoplay; encrypted-media"
+allowfullscreen
+></iframe>
+</div>
+
+<button class="sound-btn">🔇</button>
 
 <% } %>
 
+<div class="hero-overlay">
+
+<h2><%= movie.title || movie.name %></h2>
+
+<p>
+⭐ <%= movie.vote_average?.toFixed(1) %>
+•
+<%= (movie.release_date || movie.first_air_date || "").substring(0,4) %>
+</p>
+
+</div>
+
+</div>
+
+<% }) %>
+
+</div>
+<% } %>
+
+<div id="filterResults" style="display:none">
+
+<h2>Filtered Results</h2>
+
+<div id="filterGrid" class="movie-grid"></div>
+
+<div id="filterLoading" class="loading">
+Loading more movies...
+</div>
+
+</div>
 
 
-<!-- ================= SEARCH RESULTS ================= -->
+<!-- ================= LATEST ================= -->
+<!-- ================= LATEST ================= -->
 
-<% if (movies) { %>
+<% if (latest && latest.length > 0) { %>
 
-<h2>Search Results</h2>
+<h2>Latest</h2>
 
-<div class="movie-grid">
+<div class="movie-row">
 
-<% movies.forEach(movie => { %>
+<% latest.forEach(movie => { 
+const start = movie.release_date || movie.first_air_date;
+const startYear = start ? start.substring(0,4) : "";
+%>
 
-<a href="/movie/<%= movie.id %>" class="movie-link">
+<a href="/<%= movie.first_air_date ? 'tv' : 'movie' %>/<%= movie.id %>" class="movie-link">
 
 <div class="movie-card-small">
 
 <div class="poster-wrapper">
 
+<button 
+class="wishlist-btn"
+data-id="<%= movie.id %>"
+data-title="<%= movie.title || movie.name %>"
+data-poster="https://image.tmdb.org/t/p/w500<%= movie.poster_path %>"
+onclick="toggleWishlist(event,this)"
+>
+♡
+</button>
+
 <img 
-src="<%= movie.isOMDB 
-? movie.poster_path 
-: (movie.poster_path 
+src="<%= movie.poster_path 
 ? 'https://image.tmdb.org/t/p/w500' + movie.poster_path 
-: 'https://via.placeholder.com/300x450?text=No+Image') %>"
+: 'https://via.placeholder.com/300x450' %>"
 >
 
 <div class="movie-hover">
-
-<% if(movie.vote_average){ %>
-<p class="rating">
-⭐ <%= movie.vote_average.toFixed(1) %>
-</p>
-<% } %>
-
-<% if(movie.release_date){ %>
-<p>📅 <%= movie.release_date %></p>
-<% } %>
-
-<% if(movie.overview){ %>
-<p>
-<%= movie.overview.substring(0,60) %>...
-</p>
-<% } %>
-
+<p class="rating">⭐ <%= movie.vote_average?.toFixed(1) %></p>
+<p>📅 <%= startYear %></p>
 </div>
 
 </div>
 
-<h3><%= movie.title %></h3>
-
-<p><%= movie.release_date || "" %></p>
+<h3><%= movie.title || movie.name %></h3>
+<p><%= startYear %></p>
 
 </div>
 
@@ -118,6 +186,15 @@ src="<%= movie.isOMDB
 </div>
 
 <% } %>
+
+
+
+<!-- ================= CONTINUE WATCHING ================= -->
+
+<div id="continueSection" style="display:none">
+<h2>Continue Watching</h2>
+<div id="continueRow" class="movie-row"></div>
+</div>
 
 
 
@@ -125,97 +202,48 @@ src="<%= movie.isOMDB
 
 <% if (trending && trending.length > 0) { %>
 
-<h2>Trending Movies</h2>
+<h2>Trending</h2>
 
 <div class="movie-row">
 
-<% trending.forEach(movie => { %>
+<% trending.forEach(movie => { 
 
-<a href="/movie/<%= movie.id %>" class="movie-link">
+const start = movie.release_date || movie.first_air_date;
+const startYear = start ? start.substring(0,4) : "";
+
+%>
+
+<a href="/<%= movie.first_air_date ? 'tv' : 'movie' %>/<%= movie.id %>" class="movie-link">
 
 <div class="movie-card-small">
 
 <div class="poster-wrapper">
 
-<img 
-src="<%= movie.poster_path 
-? 'https://image.tmdb.org/t/p/w500' + movie.poster_path 
-: 'https://via.placeholder.com/300x450?text=No+Image' %>"
+<button 
+class="wishlist-btn"
+data-id="<%= movie.id %>"
+data-title="<%= movie.title || movie.name %>"
+data-poster="https://image.tmdb.org/t/p/w500<%= movie.poster_path %>"
+onclick="toggleWishlist(event,this)"
 >
-
-<div class="movie-hover">
-
-<p class="rating">
-⭐ <%= movie.vote_average?.toFixed(1) %>
-</p>
-
-<p>📅 <%= movie.release_date %></p>
-
-<p>
-<%= movie.overview?.substring(0,60) %>...
-</p>
-
-</div>
-
-</div>
-
-<h3><%= movie.title %></h3>
-
-<p><%= movie.release_date %></p>
-
-</div>
-
-</a>
-
-<% }) %>
-
-</div>
-
-<% } %>
-
-
-
-<!-- ================= LATEST ================= -->
-
-<% if (latest && latest.length > 0) { %>
-
-<h2>Latest Movies</h2>
-
-<div class="movie-row">
-
-<% latest.forEach(movie => { %>
-
-<a href="/movie/<%= movie.id %>" class="movie-link">
-
-<div class="movie-card-small">
-
-<div class="poster-wrapper">
+♡
+</button>
 
 <img 
 src="<%= movie.poster_path 
 ? 'https://image.tmdb.org/t/p/w500' + movie.poster_path 
-: 'https://via.placeholder.com/300x450?text=No+Image' %>"
+: 'https://via.placeholder.com/300x450' %>"
 >
 
 <div class="movie-hover">
-
-<p class="rating">
-⭐ <%= movie.vote_average?.toFixed(1) %>
-</p>
-
-<p>📅 <%= movie.release_date %></p>
-
-<p>
-<%= movie.overview?.substring(0,60) %>...
-</p>
-
+<p class="rating">⭐ <%= movie.vote_average?.toFixed(1) %></p>
+<p>📅 <%= startYear %></p>
 </div>
 
 </div>
 
-<h3><%= movie.title %></h3>
-
-<p><%= movie.release_date %></p>
+<h3><%= movie.title || movie.name %></h3>
+<p><%= startYear %></p>
 
 </div>
 
@@ -233,43 +261,48 @@ src="<%= movie.poster_path
 
 <% if (topRated && topRated.length > 0) { %>
 
-<h2>Top Rated Movies</h2>
+<h2>Top Rated</h2>
 
 <div class="movie-row">
 
-<% topRated.forEach(movie => { %>
+<% topRated.forEach(movie => { 
 
-<a href="/movie/<%= movie.id %>" class="movie-link">
+const start = movie.release_date || movie.first_air_date;
+const startYear = start ? start.substring(0,4) : "";
+
+%>
+
+<a href="/<%= movie.first_air_date ? 'tv' : 'movie' %>/<%= movie.id %>" class="movie-link">
 
 <div class="movie-card-small">
 
 <div class="poster-wrapper">
 
+<button 
+class="wishlist-btn"
+data-id="<%= movie.id %>"
+data-title="<%= movie.title || movie.name %>"
+data-poster="https://image.tmdb.org/t/p/w500<%= movie.poster_path %>"
+onclick="toggleWishlist(event,this)"
+>
+♡
+</button>
+
 <img 
 src="<%= movie.poster_path 
 ? 'https://image.tmdb.org/t/p/w500' + movie.poster_path 
-: 'https://via.placeholder.com/300x450?text=No+Image' %>"
+: 'https://via.placeholder.com/300x450' %>"
 >
 
 <div class="movie-hover">
-
-<p class="rating">
-⭐ <%= movie.vote_average?.toFixed(1) %>
-</p>
-
-<p>📅 <%= movie.release_date %></p>
-
-<p>
-<%= movie.overview?.substring(0,60) %>...
-</p>
-
+<p class="rating">⭐ <%= movie.vote_average?.toFixed(1) %></p>
+<p>📅 <%= startYear %></p>
 </div>
 
 </div>
 
-<h3><%= movie.title %></h3>
-
-<p><%= movie.release_date %></p>
+<h3><%= movie.title || movie.name %></h3>
+<p><%= startYear %></p>
 
 </div>
 
@@ -281,83 +314,579 @@ src="<%= movie.poster_path
 
 <% } %>
 
+<!-- ================= YOU MAY ALSO LIKE ================= -->
 
-
-<!-- ================= GENRES ================= -->
-
-<% if (genres && genres.length > 0) { %>
-
-<h2>Browse by Genre</h2>
-
-<div class="genre-list">
-
-<% genres.forEach(genre => { %>
-
-<a href="/genre/<%= genre.id %>" class="genre-btn">
-<%= genre.name %>
-</a>
-
-<% }) %>
-
+<div id="recommendSection" style="display:none">
+<h2 id="recommendTitle">You May Also Like</h2>
+<div id="recommendRow" class="movie-row"></div>
 </div>
 
-<% } %>
 
+<!-- ================= WATCHED ================= -->
+
+<div id="watchedSection" style="display:none">
+<h2>Watched</h2>
+<div id="watchedRow" class="movie-row"></div>
 </div>
 
 
 
-<!-- ================= SEARCH SUGGESTIONS SCRIPT ================= -->
+</div>
+
+
 
 <script>
 
-const input = document.querySelector("input[name='movie']");
-const suggestions = document.getElementById("suggestions");
+document.addEventListener("DOMContentLoaded", function(){
 
-input.addEventListener("input", async () => {
+/* ================= CONTINUE WATCHING ================= */
 
-const query = input.value;
+const recent = JSON.parse(localStorage.getItem("recentMovies"));
 
-if(query.length < 2){
-suggestions.innerHTML = "";
-suggestions.style.display = "none";
-return;
-}
+if(recent && recent.length > 0){
 
-const res = await fetch(`/suggest?q=${query}`);
-const data = await res.json();
+document.getElementById("continueSection").style.display = "block";
 
-suggestions.innerHTML = data.map(movie => `
-<div class="suggest-item" onclick="selectMovie('${movie.title}')">
-${movie.title}
+const row = document.getElementById("continueRow");
+
+recent.forEach(movie => {
+
+row.innerHTML += `
+<div class="continue-wrapper">
+
+<a href="/${movie.type || 'movie'}/${movie.id}" class="movie-link">
+
+<div class="continue-card">
+
+<img src="${movie.poster}">
+
+${movie.progress > 0 ? `
+<div class="progress-bar">
+<div class="progress" style="width:${movie.progress}%"></div>
 </div>
-`).join("");
+` : ""}
 
-suggestions.style.display = "block";
+<h3>${movie.title}</h3>
+
+</div>
+
+</a>
+
+<button class="remove-btn" data-id="${movie.id}">
+✕
+</button>
+
+</div>
+`;
+
+});
+
+document.querySelectorAll(".remove-btn").forEach(btn => {
+
+btn.addEventListener("click", function(e){
+
+e.stopPropagation();
+
+const id = this.dataset.id;
+
+removeMovie(id);
+
+});
+
+});
+
+}
+
+
+/* ================= WATCHED ================= */
+
+const watched = JSON.parse(localStorage.getItem("watched"));
+
+if(watched && watched.length > 0){
+
+document.getElementById("watchedSection").style.display = "block";
+
+const row = document.getElementById("watchedRow");
+
+watched.forEach(movie => {
+
+row.innerHTML += `
+<a href="/${movie.type || 'movie'}/${movie.id}" class="movie-link">
+
+<div class="continue-card">
+
+<img src="${movie.poster}">
+
+<h3>${movie.title}</h3>
+
+</div>
+
+</a>
+`;
+
+});
+
+}
+
+
+/* ================= YOU MAY ALSO LIKE ================= */
+
+if(watched && watched.length > 0){
+
+const lastWatched = watched[0];
+
+document.getElementById("recommendTitle").innerText =
+`Because you watched ${lastWatched.title}`;
+
+fetch(`/recommend/${lastWatched.id}`)
+.then(res => res.json())
+.then(data => {
+
+if(data && data.length > 0){
+
+document.getElementById("recommendSection").style.display = "block";
+
+const row = document.getElementById("recommendRow");
+
+data.slice(0,10).forEach(movie => {
+
+row.innerHTML += `
+<a href="/${movie.first_air_date ? 'tv' : 'movie'}/${movie.id}" class="movie-link">
+
+<div class="movie-card-small">
+
+<img src="https://image.tmdb.org/t/p/w500${movie.poster_path}">
+
+<h3>${movie.title || movie.name}</h3>
+
+</div>
+
+</a>
+`;
+
+});
+
+}
+
+});
+
+}
+
+updateWishlistUI();
 
 });
 
 
-function selectMovie(title){
-input.value = title;
-suggestions.innerHTML = "";
-suggestions.style.display = "none";
+function removeMovie(id){
+
+let recent = JSON.parse(localStorage.getItem("recentMovies")) || [];
+
+recent = recent.filter(movie => movie.id != id);
+
+localStorage.setItem("recentMovies", JSON.stringify(recent));
+
+location.reload();
+
 }
-
-
-/* CLOSE WHEN CLICK OUTSIDE */
-
-document.addEventListener("click", function(e){
-
-if(!e.target.closest(".search-wrapper")){
-suggestions.style.display = "none";
-}
-
-});
-
 
 </script>
 
 
+
+<script>
+
+function getWishlist(){
+return JSON.parse(localStorage.getItem("wishlist")) || [];
+}
+
+function saveWishlist(list){
+localStorage.setItem("wishlist", JSON.stringify(list));
+}
+
+
+function toggleWishlist(e,btn){
+
+e.preventDefault();
+e.stopPropagation();
+
+const id = btn.dataset.id;
+const title = btn.dataset.title;
+const poster = btn.dataset.poster;
+
+let wishlist = getWishlist();
+
+const exists = wishlist.find(movie => movie.id == id);
+
+if(exists){
+
+wishlist = wishlist.filter(movie => movie.id != id);
+
+}else{
+
+wishlist.unshift({
+id,
+title,
+poster
+});
+
+}
+
+saveWishlist(wishlist);
+
+updateWishlistUI();
+
+}
+
+
+function updateWishlistUI(){
+
+const wishlist = getWishlist();
+
+document.querySelectorAll(".wishlist-btn").forEach(btn=>{
+
+const id = btn.dataset.id;
+
+if(wishlist.find(movie => movie.id == id)){
+
+btn.classList.add("active");
+btn.innerHTML = "❤";
+
+}else{
+
+btn.classList.remove("active");
+btn.innerHTML = "♡";
+
+}
+
+});
+
+}
+
+
+</script>
+<% } %>
+<!-- ================= PREMIUM FOOTER ================= -->
+
+<footer class="footer">
+
+<div class="footer-top">
+
+<div class="footer-brand">
+<h2>Movieverse</h2>
+<p>Your ultimate destination for movies & series discovery.</p>
+</div>
+
+<div class="footer-column">
+<h4>Browse</h4>
+<a href="/">Home</a>
+<a href="/wishlist">Wishlist</a>
+<a href="#">Trending</a>
+<a href="#">Top Rated</a>
+</div>
+
+<div class="footer-column">
+<h4>Explore</h4>
+<a href="#">Latest</a>
+<a href="#">Genres</a>
+<a href="#">Popular</a>
+<a href="#">New Releases</a>
+</div>
+
+<div class="footer-column">
+<h4>Support</h4>
+<a href="#">About</a>
+<a href="#">Contact</a>
+<a href="#">Privacy Policy</a>
+<a href="#">Terms</a>
+</div>
+
+</div>
+
+<div class="footer-bottom">
+
+<div class="social-icons">
+<a href="#">Instagram</a>
+<a href="#">Twitter</a>
+<a href="#">YouTube</a>
+<a href="#">GitHub</a>
+</div>
+
+<p>© 2026 Movieverse. All rights reserved.</p>
+
+</div>
+
+</footer>
+<button id="topBtn">↑</button>
+
+
+
+
+<script>
+
+function renderMovies(movies){
+
+const grid = document.getElementById("filterGrid")
+
+const fragment = document.createDocumentFragment()
+
+movies.forEach(movie=>{
+
+const year =
+(movie.release_date || movie.first_air_date || "").substring(0,4)
+
+const div = document.createElement("div")
+
+div.innerHTML = `
+<a href="/${movie.first_air_date ? 'tv' : 'movie'}/${movie.id}" class="movie-link">
+
+<div class="movie-card-small">
+
+<img src="https://image.tmdb.org/t/p/w500${movie.poster_path}">
+
+<h3>${movie.title || movie.name}</h3>
+<p>${year}</p>
+
+</div>
+
+</a>
+`
+
+fragment.appendChild(div)
+
+})
+
+grid.appendChild(fragment)
+
+}
+</script>
+<script>
+
+let page = 1
+let loading = false
+
+window.filterPage = window.filterPage || 1
+window.filterLoading = false
+window.filterUrl = window.filterUrl || ""
+
+window.addEventListener("scroll", async ()=>{
+
+/* ================= FILTER SCROLL ================= */
+
+if(window.filterUrl){
+
+if(window.filterLoading) return
+
+if(window.innerHeight + window.scrollY >= document.body.offsetHeight - 500){
+
+window.filterLoading = true
+window.filterPage++
+
+document.getElementById("filterLoading").style.display = "block"
+
+const res = await fetch(`${window.filterUrl}&page=${window.filterPage}`)
+const data = await res.json()
+
+document.getElementById("filterLoading").style.display = "none"
+
+if(!data.results || data.results.length === 0){
+return
+}
+
+renderMovies(data.results)
+
+window.filterLoading = false
+
+}
+
+return
+}
+
+
+
+
+if(loading) return
+
+if(window.innerHeight + window.scrollY >= document.body.offsetHeight - 500){
+
+loading = true
+page++
+
+const params = new URLSearchParams(window.location.search)
+params.set("page",page)
+
+const loadingDiv = document.getElementById("loading")
+
+if(loadingDiv){
+loadingDiv.style.display = "block"
+}
+
+const res = await fetch(`/filter?${params.toString()}`)
+const data = await res.json()
+
+if(loadingDiv){
+loadingDiv.style.display = "none"
+}
+
+const grid = document.querySelector(".movie-grid")
+
+if(!data.results || data.results.length === 0){
+return
+}
+
+data.results.forEach(movie=>{
+
+const year = (movie.release_date || movie.first_air_date || "").substring(0,4)
+
+grid.innerHTML += `
+<a href="/${movie.first_air_date ? 'tv' : 'movie'}/${movie.id}" class="movie-link">
+
+<div class="movie-card-small">
+
+<img src="https://image.tmdb.org/t/p/w500${movie.poster_path}">
+
+<h3>${movie.title || movie.name}</h3>
+<p>${year}</p>
+
+</div>
+
+</a>
+`
+
+})
+
+loading = false
+
+}
+
+})
+
+</script>
+<script>
+
+window.addEventListener("beforeunload", ()=>{
+localStorage.setItem("scrollPos", window.scrollY)
+})
+
+window.addEventListener("load", ()=>{
+const pos = localStorage.getItem("scrollPos")
+if(pos){
+window.scrollTo(0, pos)
+}
+})
+
+</script>
+<script>
+
+window.addEventListener("pageshow", (event)=>{
+
+if(event.persisted){
+
+const pos = sessionStorage.getItem("scrollPos")
+if(pos) window.scrollTo(0,pos)
+
+}else{
+
+window.scrollTo(0,0)
+
+}
+
+})
+
+window.addEventListener("scroll",()=>{
+sessionStorage.setItem("scrollPos", window.scrollY)
+})
+
+</script>
+
+
+<script>
+
+document.querySelectorAll(".sound-btn").forEach(btn=>{
+
+btn.addEventListener("click",()=>{
+
+const iframe = btn.parentElement.querySelector("iframe")
+
+if(btn.innerText === "🔇"){
+iframe.src = iframe.src.replace("mute=1","mute=0")
+btn.innerText = "🔊"
+}else{
+iframe.src = iframe.src.replace("mute=0","mute=1")
+btn.innerText = "🔇"
+}
+
+})
+
+})
+
+</script>
+
+<script>
+const observer = new IntersectionObserver((entries)=>{
+
+entries.forEach(entry=>{
+
+const card = entry.target
+const iframe = card.querySelector("iframe")
+const video = card.querySelector(".hero-video")
+
+if(!iframe) return
+
+if(entry.isIntersecting){
+
+if(!iframe.src){
+iframe.src = iframe.dataset.src
+}
+
+video.style.opacity = 1
+
+}else{
+
+video.style.opacity = 0
+
+}
+
+})
+
+},{
+threshold: 0.4,
+rootMargin: "100px"
+})
+
+document.querySelectorAll(".hero-card").forEach(card=>{
+observer.observe(card)
+})
+document.querySelectorAll(".hero-card").forEach((card,index)=>{
+
+if(index < 5){
+const iframe = card.querySelector("iframe")
+if(iframe){
+iframe.src = iframe.dataset.src
+}
+}
+
+})
+</script>
+<script>
+
+document.querySelectorAll(".hero-card").forEach(card=>{
+
+card.addEventListener("click", ()=>{
+
+const id = card.dataset.id
+const type = card.dataset.type
+
+window.location.href = `/${type}/${id}`
+
+})
+
+})
+
+</script>
+
+
+
+
 </body>
 </html>
+
